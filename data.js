@@ -920,7 +920,7 @@ window.DATA = {
     ],
     [
      "White corn (canned)",
-     100
+     28
     ]
    ]
   },
@@ -959,10 +959,6 @@ window.DATA = {
     [
      "Onion",
      20
-    ],
-    [
-     "White corn (canned)",
-     60
     ]
    ]
   },
