@@ -52,3 +52,31 @@ select{max-width:100%}
 .scroll{overflow-x:auto}
 footer{text-align:center;color:var(--mute);font-size:12px;padding:20px}
 @media(max-width:600px){main{padding:10px}th,td{padding:5px 5px}}
+
+/* phone-first + shopping list */
+html{-webkit-text-size-adjust:100%}
+nav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 auto;min-height:40px}
+.btn{min-height:36px}
+.shoplist{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.shop{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 10px 10px 14px}
+.shop .si{flex:1;min-width:0}
+.shop .sn{font-weight:600;font-size:16px}
+.shop .sq{font-weight:700;color:var(--green);text-align:right;font-size:15px;max-width:34%}
+.shop input{width:84px;padding:4px 6px}
+.shop.got{opacity:.5;background:#eef0e6}
+.shop.got .sn{text-decoration:line-through}
+.bubble{flex:0 0 auto;width:46px;height:46px;border-radius:50%;border:2px solid var(--green2);background:#fff;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
+.bubble.on{background:var(--green);border-color:var(--green)}
+.shopbar{position:sticky;top:57px;z-index:4;padding:10px 14px}
+@media(max-width:600px){
+input,select,textarea{font-size:16px}
+header{padding:12px 14px}
+h2{font-size:20px}
+.step button{width:36px;height:36px;font-size:18px}
+.step span{min-width:24px;font-size:15px}
+.btn.sm{padding:7px 11px;font-size:13px}
+.tabs2 button{padding:8px 11px}
+.kpi div{flex:1 1 44%}
+}
