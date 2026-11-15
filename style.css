@@ -109,3 +109,9 @@ h2{font-size:20px}
 .sp-empty{text-align:center;color:var(--mute);padding:40px 10px}
 mark{background:#ffe98a;padding:0 1px;border-radius:2px}
 @media(max-width:620px){.sp-row{grid-template-columns:1fr}.sp-head{flex-direction:column}.sp-badges{justify-content:flex-start}.sp-chip{padding:8px 13px}.sp-bar input{font-size:16px}}
+
+.sp-ov{margin:10px 0 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 14px}
+.sp-ov details{border-bottom:1px solid var(--line);padding:8px 0}.sp-ov details:last-child{border-bottom:0}
+.sp-ov summary{cursor:pointer;font-weight:650;color:var(--green)}
+.sp-ov div{font-size:14px}.sp-ov ul{padding-left:20px;margin:6px 0}.sp-ov p{margin:6px 0}
+.sp-badge.e-Overview{background:#e3d9ee}
