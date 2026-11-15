@@ -5,7 +5,7 @@ const D = window.DATA;
 const KEY = 'hfo.v1';
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const SLOTS = [['shake','Shake'],['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['night','Night'],['snack','Snack']];
-const TABS = [['overview','Today'],['diet','Diet week'],['meals','Meals'],['shopping','Shopping'],['workout','Workout'],['targets','Targets'],['supps','Supplements']];
+const TABS = [['overview','Today'],['diet','Diet week'],['meals','Meals'],['recipes','Recipes & prep'],['shopping','Shopping'],['workout','Workout'],['targets','Targets'],['supps','Supplements']];
 const FOOD = {}; D.foods.forEach(f => FOOD[f.name] = f);
 const NI = {}; D.NUT.forEach((n, i) => NI[n] = i);
 
@@ -28,7 +28,7 @@ function freshState() {
   return {
     tab: 'overview', view: 'avg', showAllMeals: false, showAllShop: false,
     targets: { bw: 200, goal: 240, rate: 0.5, maint: 16, prot: 1.0, fat: 0.55, fiber: 14 },
-    week: freshWeek(), mealIngs: {}, customMeals: [], pk: {}, bought: {},
+    week: freshWeek(), rec: { burritos: 14 }, mealIngs: {}, customMeals: [], pk: {}, bought: {},
     ex: D.exercises.map(e => Object.assign({ load: '' }, e))
   };
 }
@@ -94,7 +94,7 @@ function status(i, val, C) {
 /* ---------- renderers ---------- */
 function render() {
   document.getElementById('nav').innerHTML = TABS.map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" onclick="HFO.tab('${k}')">${l}</button>`).join('');
-  const fn = { overview, diet, meals, shopping, workout, targets, supps }[S.tab];
+  const fn = { overview, diet, meals, recipes, shopping, workout, targets, supps }[S.tab];
   document.getElementById('main').innerHTML = fn();
   if (S.tab === 'supps' && window.SUPP) SUPP.mount();
   save();
@@ -174,6 +174,66 @@ function meals() {
     h += `</table></div><div class="row" style="margin-top:6px"><select id="add${mi}">${D.foods.map((f, i) => `<option value="${i}">${esc(f.name)}</option>`).join('')}</select><button class="btn sm" onclick="HFO.addIng(${mi})">Add ingredient</button></div>`;
     h += `<details style="margin-top:8px"><summary>All nutrients per serving</summary><table>${D.NUT.map((n, i) => `<tr><td>${n}</td><td class="n">${fmt(t[i], i)} ${D.UNIT[i]}</td></tr>`).join('')}</table></details></div>`;
   });
+  return h;
+}
+
+
+/* ---------- recipes & prep ---------- */
+function buyCell(f, g) {
+  const fd = FOOD[f]; if (!fd) return '';
+  if (D.lbfoods.indexOf(f) >= 0) return (g / fd.yield / 453.592).toFixed(2) + ' lb';
+  if (f === 'Egg, whole') return Math.ceil(g / 50) + ' eggs';
+  return '';
+}
+function recTable(rows, cols) {
+  let h = '<div class="scroll"><table><tr><th>Ingredient</th>' + cols.map(c => '<th class="n">' + c + '</th>').join('') + '<th class="n">Buy (raw)</th></tr>';
+  rows.forEach(r => { h += '<tr><td>' + esc(r.f) + '</td>' + r.cells.map(c => '<td class="n">' + c + '</td>').join('') + '<td class="n">' + buyCell(r.f, r.total) + '</td></tr>'; });
+  return h + '</table></div>';
+}
+function recipes() {
+  S.rec = S.rec || { burritos: 14 };
+  const n = Math.max(1, Math.round(S.rec.burritos || 14));
+  let h = '<h2>Recipes &amp; prep</h2><p class="mute">Quantities come from the gram amounts on your Meals tab, so if you change a meal there, this page updates too.</p>';
+
+  /* breakfast burrito batch */
+  const bm = mealByName(M.burrito), bi = ingsOf(bm), bt = mealTotals(bm);
+  h += '<div class="card"><h3>' + esc(bm.name) + ': Saturday / Sunday batch</h3>';
+  h += '<div class="row" style="margin-bottom:8px"><label>Burritos to make <input type="number" min="1" max="60" step="1" value="' + n + '" onchange="HFO.setBur(this.value)"></label><span class="mute">Each: ' + fmt(bt[0], 0) + ' kcal · ' + fmt(bt[1], 1) + ' g protein · ' + fmt(bt[4], 1) + ' g fiber</span></div>';
+  h += recTable(bi.map(([f, g]) => ({ f, total: g * n, cells: [Math.round(g), Math.round(g * n).toLocaleString()] })), ['Per burrito (g)', 'Batch total (g)']);
+  h += '<p class="mute">Beef and rice weights are cooked; "Buy (raw)" converts back to the weight you buy. Tortillas, tots, veggies and salsa are on the Shopping tab.</p>';
+  h += '<ol>' +
+    '<li>Cook the ground beef with garlic and cumin or taco seasoning, then drain and cool. Bake or air-fry the tater tots until crisp.</li>' +
+    '<li>Saute the diced peppers and onion, then wilt in the spinach. Scramble the whole eggs and egg whites together in batches, a little underdone (they finish when you reheat).</li>' +
+    '<li>Let everything cool before assembling so the tortillas do not steam and tear. Per burrito: tortilla, eggs, beef, tots, veggies, cheese, a spoon of green salsa. If you add pinto beans, add them here.</li>' +
+    '<li>Roll tight and wrap each burrito in foil or parchment. Keep the next 3 to 4 days in the fridge and freeze the rest (best within about 2 to 3 months).</li>' +
+    '<li>Reheat from the fridge for about 1.5 to 2 minutes in the microwave, or from frozen for about 3 to 4 minutes, flipping halfway. Heat until steaming hot (165 °F / 74 °C).</li></ol></div>';
+
+  /* lunch and dinner batch from the week plan */
+  const sv = {};
+  DAYS.forEach(d => ['lunch', 'dinner'].forEach(k => { const c = (S.week[d] || {})[k]; if (c && c[0] && c[1] && c[0].indexOf('Pizza') < 0) sv[c[0]] = (sv[c[0]] || 0) + c[1]; }));
+  h += '<div class="card"><h3>Lunch &amp; dinner prep (Sunday)</h3>';
+  const names = Object.keys(sv);
+  if (!names.length) h += '<p class="mute">No lunches or dinners are planned yet. Set them on the Diet week tab.</p>';
+  names.forEach(nm => {
+    const m = mealByName(nm); if (!m) return;
+    h += '<h4 style="margin:10px 0 4px">' + esc(nm) + ' <span class="mute">· ' + sv[nm] + ' servings this week</span></h4>';
+    h += recTable(ingsOf(m).map(([f, g]) => ({ f, total: g * sv[nm], cells: [Math.round(g), Math.round(g * sv[nm]).toLocaleString()] })), ['Per serving (g)', 'Week total (g)']);
+  });
+  h += '<ol>' +
+    '<li>Cook a big pot of rice and portion it into containers. Brown the ground beef (or cook chicken on a sheet pan) and portion by weight using the gram amounts above.</li>' +
+    '<li>Keep cheese, salsa and fresh veggies in a separate small container and add them when you reheat. Cooked rice and meat keep about 3 to 4 days in the fridge, so freeze the meals for days 5 to 7.</li>' +
+    '<li>Rotate in the Chicken Burrito, Steak &amp; Tots Plate or Shrimp Tacos for variety without changing the formula of starch, protein and a little veggie.</li></ol></div>';
+
+  /* shake and night glass */
+  const sm = mealByName(M.shake);
+  h += '<div class="card"><h3>' + esc(sm.name) + '</h3><p class="mute" style="margin:0 0 6px">' + ingsOf(sm).map(([f, g]) => esc(f) + ' ' + Math.round(g) + ' g').join(' · ') + '</p>' +
+    '<ol><li>Pre-portion the banana, mango, spinach and chia into freezer bags on Sunday, one bag per day.</li><li>In the morning, blend a bag with the milk and whey until smooth. Add a splash more milk if it is too thick.</li></ol>' +
+    '<p class="mute" style="margin-bottom:0">Night: ' + esc(M.night) + '. Pour and drink; nothing to prep.</p></div>';
+
+  /* swaps */
+  h += '<div class="card"><h3>Easy flavor swaps (almost no calories)</h3><ul>' +
+    '<li>Garlic, onion, cilantro, lime, jalapeno, chipotle, taco or fajita seasoning and green salsa are all fair game. Change the sauce, not the macros.</li>' +
+    '<li>Swap the beef in the burrito for chicken or seasoned beef, and tots for diced potatoes. Swap the flour tortilla for a low-carb wrap only if you need to trim calories.</li></ul></div>';
   return h;
 }
 
@@ -282,6 +342,7 @@ window.HFO = {
   tab(k) { S.tab = k; render(); window.scrollTo(0, 0); },
   view(v) { S.view = v; S.tab = 'diet'; render(); },
   toggle(k) { S[k] = !S[k]; render(); },
+  setBur(v) { S.rec = S.rec || {}; S.rec.burritos = Math.max(1, Math.min(60, Math.round(num(v)) || 14)); render(); },
 bought(k) { S.bought = S.bought || {}; if (S.bought[k]) delete S.bought[k]; else S.bought[k] = 1; render(); },
 clearBought() { S.bought = {}; render(); },
   fill(d, p) { S.week[d] = p ? JSON.parse(JSON.stringify(PRESETS[p])) : {}; render(); },
