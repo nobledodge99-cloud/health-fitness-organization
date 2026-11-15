@@ -1,0 +1,296 @@
+/* Health & Fitness Organization: no build step. Data lives in data.js; your edits save in localStorage. */
+(function () {
+'use strict';
+const D = window.DATA;
+const KEY = 'hfo.v1';
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const SLOTS = [['shake','Shake'],['breakfast','Breakfast'],['lunch','Lunch'],['dinner','Dinner'],['night','Night'],['snack','Snack']];
+const TABS = [['overview','Today'],['diet','Diet week'],['meals','Meals'],['shopping','Shopping'],['workout','Workout'],['targets','Targets'],['supps','Supplements']];
+const FOOD = {}; D.foods.forEach(f => FOOD[f.name] = f);
+const NI = {}; D.NUT.forEach((n, i) => NI[n] = i);
+
+/* ---------- state ---------- */
+function mealByPrefix(p) { return D.meals.find(m => m.name.startsWith(p)).name; }
+const M = {
+  shake: mealByPrefix('Morning Fruit'), burrito: mealByPrefix('Beef, Egg'), bowl: mealByPrefix('Beef, Rice'),
+  night: mealByPrefix('Night Glass'), pizza: mealByPrefix('Costco Pepperoni')
+};
+const PRESETS = {
+  typical: { shake: [M.shake, 1], breakfast: [M.burrito, 1], lunch: [M.bowl, 1], dinner: [M.bowl, 1], night: [M.night, 1] },
+  pizza: { shake: [M.shake, 1], breakfast: [M.burrito, 1], dinner: [M.pizza, 3], night: [M.night, 1] }
+};
+function freshWeek() {
+  const w = {};
+  DAYS.forEach(d => w[d] = JSON.parse(JSON.stringify(d === 'Saturday' ? PRESETS.pizza : PRESETS.typical)));
+  return w;
+}
+function freshState() {
+  return {
+    tab: 'overview', view: 'avg', showAllMeals: false, showAllShop: false,
+    targets: { bw: 200, goal: 240, rate: 0.5, maint: 16, prot: 1.0, fat: 0.55, fiber: 14 },
+    week: freshWeek(), mealIngs: {}, customMeals: [], pk: {},
+    ex: D.exercises.map(e => Object.assign({ load: '' }, e))
+  };
+}
+let S;
+try { S = Object.assign(freshState(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = freshState(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function allMeals() { return D.meals.concat(S.customMeals); }
+function ingsOf(m) { return S.mealIngs[m.name] || m.ings; }
+function mealByName(n) { return allMeals().find(m => m.name === n); }
+
+/* ---------- helpers ---------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function num(v) { const x = parseFloat(v); return isNaN(x) ? 0 : x; }
+function fmt(v, i) {
+  if (v === '' || v == null) return '';
+  if (i === 0 || Math.abs(v) >= 100) return Math.round(v).toLocaleString();
+  return (Math.round(v * 10) / 10).toString();
+}
+function badge(st) { return `<span class="badge ${st[1]}">${st[0]}</span>`; }
+
+/* ---------- nutrition math ---------- */
+function mealTotals(m) {
+  const t = Array(D.NUT.length).fill(0);
+  ingsOf(m).forEach(([f, g]) => { const fd = FOOD[f]; if (fd) fd.n.forEach((v, i) => t[i] += v * g / 100); });
+  return t;
+}
+const mealCache = {};
+function mt(name) { const m = mealByName(name); if (!m) return Array(D.NUT.length).fill(0); return mealTotals(m); }
+function dayTotals(day) {
+  const t = Array(D.NUT.length).fill(0);
+  Object.values(S.week[day] || {}).forEach(([name, sv]) => { if (!name || !sv) return; const x = mt(name); x.forEach((v, i) => t[i] += v * sv); });
+  return t;
+}
+function weekAvg() {
+  const t = Array(D.NUT.length).fill(0);
+  DAYS.forEach(d => dayTotals(d).forEach((v, i) => t[i] += v / 7));
+  return t;
+}
+function hasPlan(day) { return Object.values(S.week[day] || {}).some(([n, s]) => n && s); }
+
+/* ---------- targets ---------- */
+function calcTargets() {
+  const T = S.targets;
+  const maint = Math.round(T.bw * T.maint), surplus = Math.round(T.rate * 500);
+  const cal = Math.round(maint + surplus), prot = Math.round(T.bw * T.prot), fat = Math.round(T.bw * T.fat);
+  const carbs = Math.round((cal - prot * 4 - fat * 9) / 4), fiber = Math.round(cal / 1000 * T.fiber);
+  const tgt = D.NUT.map(() => null), type = D.NUT.map(() => 'Minimum');
+  tgt[0] = cal; type[0] = 'Target'; tgt[1] = prot; type[1] = 'Minimum'; tgt[2] = carbs; type[2] = 'Target';
+  tgt[3] = fat; type[3] = 'Target'; tgt[4] = fiber; type[4] = 'Minimum';
+  Object.keys(D.micro).forEach(n => { if (n === 'Fiber') return; tgt[NI[n]] = D.micro[n][0]; type[NI[n]] = D.micro[n][1]; });
+  return { maint, surplus, tgt, type, weeks: T.rate > 0 ? Math.round((T.goal - T.bw) / T.rate) : null };
+}
+function status(i, val, C) {
+  const t = C.tgt[i], ty = C.type[i];
+  if (!(val > 0)) return ['Nothing planned', 'b-na'];
+  const p = val / t;
+  if (ty === 'Target') return p < 0.9 ? ['Under', 'b-warn'] : p > 1.15 ? ['Over', 'b-bad'] : ['On target', 'b-ok'];
+  if (ty === 'Limit') return val <= t ? ['Within limit', 'b-ok'] : ['High', 'b-bad'];
+  return val >= t ? ['Met', 'b-ok'] : ['Low', 'b-warn'];
+}
+
+/* ---------- renderers ---------- */
+function render() {
+  document.getElementById('nav').innerHTML = TABS.map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" onclick="HFO.tab('${k}')">${l}</button>`).join('');
+  const fn = { overview, diet, meals, shopping, workout, targets, supps }[S.tab];
+  document.getElementById('main').innerHTML = fn();
+  save();
+}
+
+function kpis(t, C) {
+  const items = [[0, 'Calories', 'kcal'], [1, 'Protein', 'g'], [2, 'Carbs', 'g'], [3, 'Fat', 'g'], [4, 'Fiber', 'g']];
+  return '<div class="kpi">' + items.map(([i, n, u]) => `<div><span>${n}</span><b>${fmt(t[i], i)} ${u}</b><span>target ${C.tgt[i]} ${u}</span><br>${badge(status(i, t[i], C))}</div>`).join('') + '</div>';
+}
+function nutTable(t, C, label) {
+  let h = `<div class="scroll"><table><tr><th>Nutrient</th><th class="n">${label}</th><th class="n">Target</th><th class="n">% of target</th><th>Status</th></tr>`;
+  D.NUT.forEach((n, i) => {
+    h += `<tr><td>${n} <span class="mute">(${D.UNIT[i]})</span></td><td class="n">${fmt(t[i], i)}</td><td class="n">${C.tgt[i]}${C.type[i] === 'Limit' ? ' max' : C.type[i] === 'Minimum' ? ' min' : ''}</td><td class="n">${t[i] > 0 ? Math.round(t[i] / C.tgt[i] * 100) + '%' : ''}</td><td>${badge(status(i, t[i], C))}</td></tr>`;
+  });
+  return h + '</table></div>';
+}
+
+function overview() {
+  const C = calcTargets(), today = DAYS[new Date().getDay()];
+  const dd = D.days.find(d => d.day === today);
+  const exs = S.ex.filter(e => e.day === today);
+  let h = `<h2>${today}</h2><div class="grid g2"><div class="card"><h3>Workout: ${esc(dd.focus)}</h3>`;
+  if (exs.length) {
+    h += '<table><tr><th>Exercise</th><th class="n">Sets</th><th>Reps</th></tr>' + exs.map(e => `<tr><td>${esc(e.name)}<div class="mute">${esc(e.muscle)}${e.notes ? ' · ' + esc(e.notes) : ''}</div></td><td class="n">${e.sets}</td><td>${esc(e.reps)}</td></tr>`).join('') + '</table>';
+  } else h += '<p class="mute">Rest day: stretch / mobility and abs.</p>';
+  h += '</div><div class="card"><h3>Meals today</h3>';
+  const pl = S.week[today] || {};
+  const rows = SLOTS.filter(([k]) => pl[k] && pl[k][0] && pl[k][1]).map(([k, l]) => { const x = mt(pl[k][0]).map(v => v * pl[k][1]); return `<tr><td>${l}</td><td>${esc(pl[k][0])}${pl[k][1] !== 1 ? ' x' + pl[k][1] : ''}</td><td class="n">${fmt(x[0], 0)}</td><td class="n">${fmt(x[1], 1)} g</td></tr>`; });
+  h += rows.length ? '<table><tr><th></th><th>Meal</th><th class="n">kcal</th><th class="n">Protein</th></tr>' + rows.join('') + '</table>' : '<p class="mute">Nothing planned for today. Set it on the Diet week tab.</p>';
+  h += '</div></div>';
+  h += '<h2>Today vs. targets</h2><div class="card">' + kpis(dayTotals(today), C) + '</div>';
+  h += '<h2>This week (daily average)</h2><div class="card">' + kpis(weekAvg(), C) + '</div>';
+  return h;
+}
+
+function mealOptions(sel) {
+  return '<option value="">(none)</option>' + allMeals().map((m, i) => `<option value="${i}" ${m.name === sel ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+}
+function diet() {
+  const C = calcTargets();
+  let h = '<h2>Diet week</h2><p class="mute">Pick a meal and servings for each slot. Use the Typical / Pizza buttons to fill a day in one tap. The totals below update automatically.</p>';
+  h += '<div class="row" style="margin-bottom:10px"><button class="btn" onclick="HFO.fillAll(\'typical\')">Set every day to Typical</button><button class="btn alt" onclick="HFO.resetWeek()">Reset week to default</button></div>';
+  h += '<div class="days">';
+  DAYS.forEach(d => {
+    const t = dayTotals(d);
+    h += `<div class="day ${S.view === d ? 'sel' : ''}"><h4>${d}</h4><div class="mute">${fmt(t[0], 0)} kcal · ${fmt(t[1], 1)} g protein</div>`;
+    h += `<div class="row" style="margin:6px 0"><button class="btn sm" onclick="HFO.fill('${d}','typical')">Typical</button><button class="btn sm alt" onclick="HFO.fill('${d}','pizza')">Pizza day</button><button class="btn sm alt" onclick="HFO.fill('${d}','')">Clear</button><button class="btn sm alt" onclick="HFO.view('${d}')">Details</button></div>`;
+    SLOTS.forEach(([k, l]) => {
+      const cur = (S.week[d] || {})[k] || ['', 0];
+      h += `<div class="slot"><label>${l}</label><select onchange="HFO.setMeal('${d}','${k}',this.value)">${mealOptions(cur[0])}</select>`;
+      h += `<div class="step"><button onclick="HFO.srv('${d}','${k}',-1)">−</button><span>${cur[0] ? cur[1] : ''}</span><button onclick="HFO.srv('${d}','${k}',1)">+</button></div></div>`;
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  h += '<h2>Nutrition</h2><div class="card"><div class="tabs2"><button class="' + (S.view === 'avg' ? 'on' : '') + '" onclick="HFO.view(\'avg\')">Week (daily avg)</button>' + DAYS.map(d => `<button class="${S.view === d ? 'on' : ''}" onclick="HFO.view('${d}')">${d.slice(0, 3)}</button>`).join('') + '</div>';
+  const t = S.view === 'avg' ? weekAvg() : dayTotals(S.view);
+  h += kpis(t, C) + '<div style="height:10px"></div>' + nutTable(t, C, S.view === 'avg' ? 'Daily avg' : 'Day total') + '</div>';
+  return h;
+}
+
+function meals() {
+  const used = new Set();
+  DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, s]) => { if (n && s) used.add(n); }));
+  let h = '<h2>Meals</h2><p class="mute">Grams are per 1 serving. Edit a gram amount and every total and the shopping list update. By default only meals on this week\'s plan are shown.</p>';
+  h += `<div class="row" style="margin-bottom:10px"><button class="btn alt" onclick="HFO.toggle('showAllMeals')">${S.showAllMeals ? 'Show only meals on this week\'s plan' : 'Show all meals'}</button><button class="btn" onclick="HFO.newMeal()">+ New meal</button></div>`;
+  allMeals().forEach((m, mi) => {
+    if (!S.showAllMeals && !used.has(m.name)) return;
+    const t = mealTotals(m), ings = ingsOf(m), edited = !!S.mealIngs[m.name];
+    h += `<div class="card"><div class="row"><h3 style="margin:0">${esc(m.name)}</h3>${edited ? `<button class="btn sm alt" onclick="HFO.resetMeal(${mi})">Reset to default</button>` : ''}</div>`;
+    h += `<div class="mute" style="margin:4px 0">Per serving: ${fmt(t[0], 0)} kcal · ${fmt(t[1], 1)} g protein · ${fmt(t[2], 1)} g carbs · ${fmt(t[3], 1)} g fat · ${fmt(t[4], 1)} g fiber</div>`;
+    h += '<div class="scroll"><table><tr><th>Ingredient</th><th class="n">Grams</th><th class="n">kcal</th><th class="n">Protein</th><th></th></tr>';
+    ings.forEach(([f, g], k) => {
+      const fd = FOOD[f]; const c = fd ? fd.n[0] * g / 100 : 0, p = fd ? fd.n[1] * g / 100 : 0;
+      h += `<tr><td>${esc(f)}</td><td class="n edit"><input type="number" min="0" step="1" value="${g}" onchange="HFO.setG(${mi},${k},this.value)"></td><td class="n">${fmt(c, 0)}</td><td class="n">${fmt(p, 1)}</td><td><button class="btn sm alt" onclick="HFO.delIng(${mi},${k})">✕</button></td></tr>`;
+    });
+    h += `</table></div><div class="row" style="margin-top:6px"><select id="add${mi}">${D.foods.map((f, i) => `<option value="${i}">${esc(f.name)}</option>`).join('')}</select><button class="btn sm" onclick="HFO.addIng(${mi})">Add ingredient</button></div>`;
+    h += `<details style="margin-top:8px"><summary>All nutrients per serving</summary><table>${D.NUT.map((n, i) => `<tr><td>${n}</td><td class="n">${fmt(t[i], i)} ${D.UNIT[i]}</td></tr>`).join('')}</table></details></div>`;
+  });
+  return h;
+}
+
+function shopping() {
+  const need = {};
+  DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, sv]) => {
+    const m = mealByName(n); if (!m || !sv) return;
+    ingsOf(m).forEach(([f, g]) => need[f] = (need[f] || 0) + g * sv);
+  }));
+  let h = '<h2>Shopping list</h2><p class="mute">Built from this week\'s Diet week plan (7 days). Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes in blue are assumptions: change them to what you actually buy.</p>';
+  h += `<div class="row" style="margin-bottom:10px"><button class="btn alt" onclick="HFO.toggle('showAllShop')">${S.showAllShop ? 'Show only what this week needs' : 'Show every food'}</button></div>`;
+  h += '<div class="card"><h3>Buy by weight (lb)</h3><div class="scroll"><table><tr><th>Food</th><th class="n">Needed (g, as eaten)</th><th class="n">Buy (lb, raw)</th><th class="n">Rounded up</th><th>Note</th></tr>';
+  D.lbfoods.forEach(f => {
+    const g = need[f] || 0; if (!g && !S.showAllShop) return;
+    const lb = g ? g / FOOD[f].yield / 453.592 : 0;
+    h += `<tr><td><b>${esc(f)}</b></td><td class="n">${Math.round(g).toLocaleString()}</td><td class="n">${g ? lb.toFixed(1) : ''}</td><td class="n">${g ? Math.ceil(lb) : ''}</td><td class="mute">${esc(FOOD[f].note)}</td></tr>`;
+  });
+  h += '</table></div></div><div class="card"><h3>Buy by package</h3><div class="scroll"><table><tr><th>Food</th><th class="n">Needed (g, as eaten)</th><th>Package</th><th class="n">Package size (g)</th><th class="n">Buy</th><th>Note</th></tr>';
+  D.pk.forEach((p, i) => {
+    const g = need[p.food] || 0; if (!g && !S.showAllShop) return;
+    const size = S.pk[p.food] || p.size;
+    h += `<tr><td><b>${esc(p.food)}</b></td><td class="n">${Math.round(g).toLocaleString()}</td><td>${esc(p.unit)}</td><td class="n edit"><input type="number" min="1" value="${size}" onchange="HFO.setPk(${i},this.value)"></td><td class="n"><b>${g ? Math.ceil(g / size) : ''}</b></td><td class="mute">${esc(p.note)}</td></tr>`;
+  });
+  return h + '</table></div></div>';
+}
+
+/* ---------- workout ---------- */
+function planned(day, muscle) { return S.ex.filter(e => (!day || e.day === day) && e.muscle === muscle).reduce((a, e) => a + num(e.sets), 0); }
+function wstatus(plan, tgt) {
+  if (tgt == null) return plan ? ['Planned', 'b-ok'] : ['No target', 'b-na'];
+  if (!plan) return ['Not started', 'b-na'];
+  return plan < tgt ? ['Under', 'b-warn'] : plan === tgt ? ['On target', 'b-ok'] : ['Over', 'b-bad'];
+}
+function workout() {
+  let h = '<h2>Workout split</h2><p class="mute">Edit sets, reps, load and notes. Working-set totals compare to your weekly targets automatically.</p>';
+  h += '<div class="card"><h3>Weekly volume (working sets)</h3><div class="scroll"><table><tr><th>Muscle</th>' + DAYS.map(d => `<th class="n">${d.slice(0, 3)}</th>`).join('') + '<th class="n">Planned</th><th class="n">Target</th><th class="n">Diff</th><th>Status</th></tr>';
+  D.muscles.forEach(m => {
+    const tg = D.days.reduce((a, d) => a + d.targets.filter(x => x.muscle === m).reduce((b, x) => b + (x.target || 0), 0), 0);
+    const hasT = D.days.some(d => d.targets.some(x => x.muscle === m && x.target != null));
+    const pl = planned(null, m);
+    h += `<tr><td><b>${m}</b></td>` + DAYS.map(d => `<td class="n">${planned(d, m) || ''}</td>`).join('') + `<td class="n"><b>${pl}</b></td><td class="n">${hasT ? tg : ''}</td><td class="n">${hasT ? pl - tg : ''}</td><td>${badge(wstatus(pl, hasT ? tg : null))}</td></tr>`;
+  });
+  const total = S.ex.reduce((a, e) => a + num(e.sets), 0);
+  h += `<tr><td><b>Total</b></td>${DAYS.map(d => `<td class="n">${S.ex.filter(e => e.day === d).reduce((a, e) => a + num(e.sets), 0) || ''}</td>`).join('')}<td class="n"><b>${total}</b></td><td></td><td></td><td></td></tr></table></div></div>`;
+  D.days.forEach(dd => {
+    const exs = S.ex.map((e, i) => [e, i]).filter(([e]) => e.day === dd.day);
+    const chips = dd.targets.map(t => { const pl = planned(dd.day, t.muscle); return `<span class="badge ${wstatus(pl, t.target)[1]}">${t.muscle}: ${pl}${t.target != null ? '/' + t.target : ''}</span>`; }).join(' ');
+    h += `<div class="card"><h3>${dd.day}: ${esc(dd.focus)}</h3><div class="row" style="margin-bottom:6px">${chips}</div>`;
+    h += '<div class="scroll"><table><tr><th>Muscle</th><th>Exercise</th><th class="n">Sets</th><th>Reps</th><th>Load</th><th>Notes</th><th></th></tr>';
+    exs.forEach(([e, i]) => {
+      h += `<tr><td>${esc(e.muscle)}</td><td class="edit"><input style="width:100%;min-width:200px" value="${esc(e.name)}" onchange="HFO.exF(${i},'name',this.value)"></td><td class="n edit"><input type="number" min="0" style="width:56px" value="${e.sets}" onchange="HFO.exF(${i},'sets',this.value)"></td><td class="edit"><input style="width:72px" value="${esc(e.reps)}" onchange="HFO.exF(${i},'reps',this.value)"></td><td class="edit"><input style="width:80px" value="${esc(e.load)}" placeholder="lb" onchange="HFO.exF(${i},'load',this.value)"></td><td class="edit"><input style="width:100%;min-width:140px" value="${esc(e.notes)}" onchange="HFO.exF(${i},'notes',this.value)"></td><td><button class="btn sm alt" onclick="HFO.delEx(${i})">✕</button></td></tr>`;
+    });
+    h += `</table></div><div class="row" style="margin-top:6px"><select id="m_${dd.day}">${D.muscles.map(m => `<option ${dd.targets.length && m === dd.targets[0].muscle ? 'selected' : ''}>${m}</option>`).join('')}</select><button class="btn sm" onclick="HFO.addEx('${dd.day}')">Add exercise</button></div></div>`;
+  });
+  return h;
+}
+
+/* ---------- targets, supplements, data ---------- */
+function targets() {
+  const C = calcTargets(), T = S.targets;
+  const inp = (k, label, step, note) => `<tr><td><b>${label}</b><div class="mute">${note}</div></td><td class="edit"><input type="number" step="${step}" value="${T[k]}" onchange="HFO.setT('${k}',this.value)"></td></tr>`;
+  let h = '<h2>Targets</h2><div class="grid g2"><div class="card"><h3>Your inputs</h3><table>';
+  h += inp('bw', 'Bodyweight (lb)', 1, 'Update as you gain and every target rescales');
+  h += inp('goal', 'Goal weight (lb)', 1, 'Lean-bulk destination');
+  h += inp('rate', 'Gain rate (lb/week)', 0.05, 'About 0.25-0.75 lb/week is a typical lean-bulk range');
+  h += inp('maint', 'Maintenance kcal per lb', 0.5, 'A guess: calibrate with weekly weigh-ins');
+  h += inp('prot', 'Protein (g per lb)', 0.05, 'A minimum: more is fine');
+  h += inp('fat', 'Fat (g per lb)', 0.05, 'Carbs fill the remaining calories');
+  h += inp('fiber', 'Fiber (g per 1,000 kcal)', 1, 'Standard adequate-intake guideline');
+  h += `</table></div><div class="card"><h3>Calculated</h3><table><tr><td>Estimated maintenance</td><td class="n">${C.maint.toLocaleString()} kcal</td></tr><tr><td>Daily surplus</td><td class="n">${C.surplus} kcal</td></tr><tr><td>Weeks to goal at this rate</td><td class="n">${C.weeks == null ? '' : C.weeks}</td></tr></table><p class="mute">Micronutrient targets default to adult-male RDAs/AIs. Sodium is an upper limit.</p></div></div>`;
+  h += '<div class="card"><h3>Daily targets</h3><div class="scroll"><table><tr><th>Nutrient</th><th class="n">Target</th><th>Type</th></tr>' + D.NUT.map((n, i) => `<tr><td>${n} <span class="mute">(${D.UNIT[i]})</span></td><td class="n">${C.tgt[i]}</td><td>${C.type[i]}</td></tr>`).join('') + '</table></div></div>';
+  h += '<div class="card"><h3>Your data</h3><p class="mute">Everything you change is saved in this browser only. Export to move it to another device or keep a backup.</p><div class="row"><button class="btn" onclick="HFO.exp()">Export data</button><label class="btn alt" style="cursor:pointer">Import data<input type="file" accept=".json" style="display:none" onchange="HFO.imp(this)"></label><button class="btn alt" onclick="HFO.wipe()">Reset everything</button></div></div>';
+  return h;
+}
+function supps() {
+  return '<h2>Supplements</h2><div class="card"><p>Coming soon. This page will use the same targets as the diet plan so supplements can fill vitamin gaps (your plan currently runs low on vitamin D).</p></div>';
+}
+
+/* ---------- actions ---------- */
+window.HFO = {
+  tab(k) { S.tab = k; render(); window.scrollTo(0, 0); },
+  view(v) { S.view = v; S.tab = 'diet'; render(); },
+  toggle(k) { S[k] = !S[k]; render(); },
+  fill(d, p) { S.week[d] = p ? JSON.parse(JSON.stringify(PRESETS[p])) : {}; render(); },
+  fillAll(p) { DAYS.forEach(d => S.week[d] = JSON.parse(JSON.stringify(PRESETS[p]))); render(); },
+  resetWeek() { S.week = freshWeek(); render(); },
+  setMeal(d, k, i) {
+    S.week[d] = S.week[d] || {};
+    if (i === '') delete S.week[d][k]; else S.week[d][k] = [allMeals()[+i].name, (S.week[d][k] && S.week[d][k][1]) || 1];
+    render();
+  },
+  srv(d, k, delta) {
+    const cur = (S.week[d] || {})[k]; if (!cur || !cur[0]) return;
+    cur[1] = Math.max(1, Math.min(12, cur[1] + delta)); render();
+  },
+  setG(mi, k, v) { const m = allMeals()[mi]; const l = (S.mealIngs[m.name] || m.ings).map(x => x.slice()); l[k][1] = num(v); S.mealIngs[m.name] = l; render(); },
+  delIng(mi, k) { const m = allMeals()[mi]; const l = (S.mealIngs[m.name] || m.ings).map(x => x.slice()); l.splice(k, 1); S.mealIngs[m.name] = l; render(); },
+  addIng(mi) { const m = allMeals()[mi]; const l = (S.mealIngs[m.name] || m.ings).map(x => x.slice()); const f = D.foods[+document.getElementById('add' + mi).value]; l.push([f.name, 100]); S.mealIngs[m.name] = l; render(); },
+  resetMeal(mi) { delete S.mealIngs[allMeals()[mi].name]; render(); },
+  newMeal() {
+    const n = (prompt('Name for the new meal:') || '').trim(); if (!n || mealByName(n)) return;
+    S.customMeals.push({ name: n, cat: 'Custom', ings: [] }); S.showAllMeals = true; render();
+  },
+  setPk(i, v) { const x = num(v); if (x > 0) S.pk[D.pk[i].food] = x; render(); },
+  exF(i, f, v) { S.ex[i][f] = v; render(); },
+  delEx(i) { S.ex.splice(i, 1); render(); },
+  addEx(day) { const m = document.getElementById('m_' + day).value; S.ex.push({ day, muscle: m, name: 'New exercise', sets: 3, reps: '10', notes: '', load: '' }); render(); },
+  setT(k, v) { S.targets[k] = num(v); render(); },
+  exp() {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(S, null, 1)], { type: 'application/json' }));
+    a.download = 'health-fitness-data.json'; a.click();
+  },
+  imp(el) {
+    const f = el.files[0]; if (!f) return; const r = new FileReader();
+    r.onload = () => { try { S = Object.assign(freshState(), JSON.parse(r.result)); render(); } catch (e) { alert('That file could not be read.'); } };
+    r.readAsText(f);
+  },
+  wipe() { if (confirm('Erase all saved changes in this browser and start over?')) { S = freshState(); render(); } }
+};
+render();
+})();
