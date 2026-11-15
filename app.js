@@ -34,6 +34,7 @@ function freshState() {
 }
 let S;
 try { S = Object.assign(freshState(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = freshState(); }
+if (location.hash === '#supplements') S.tab = 'supps';
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 function allMeals() { return D.meals.concat(S.customMeals); }
 function ingsOf(m) { return S.mealIngs[m.name] || m.ings; }
@@ -95,6 +96,7 @@ function render() {
   document.getElementById('nav').innerHTML = TABS.map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" onclick="HFO.tab('${k}')">${l}</button>`).join('');
   const fn = { overview, diet, meals, shopping, workout, targets, supps }[S.tab];
   document.getElementById('main').innerHTML = fn();
+  if (S.tab === 'supps' && window.SUPP) SUPP.mount();
   save();
 }
 
@@ -263,7 +265,16 @@ function targets() {
   return h;
 }
 function supps() {
-return '<h2>Supplements</h2><div class="card"><p>Searchable reference for protein, vitamins and minerals, performance aids, omega-3 and sleep and recovery, with doses, limits and how each one fits your diet plan.</p><p><a class="btn" href="supplements.html" style="text-decoration:none;display:inline-block;padding:10px 16px;font-size:15px">Open supplement reference</a></p></div>';
+  const C = calcTargets(), t = weekAvg();
+  const v = n => { const i = NI[n]; return fmt(t[i], i) + ' of ' + C.tgt[i] + ' ' + D.UNIT[i]; };
+  const low = ['Vitamin D', 'Fiber'].filter(n => t[NI[n]] > 0 && t[NI[n]] < C.tgt[NI[n]]);
+  const high = [['Sodium', C.tgt[NI.Sodium]], ['Zinc', 40], ['Iron', 45]].filter(([n, lim]) => t[NI[n]] > (n === 'Sodium' ? lim : lim * 0.6));
+  const btn = (q, l) => '<button class="btn sm alt" onclick="SUPP.setQ(\'' + q + '\')">' + l + '</button> ';
+  const plan = '<div class="card sp-plan"><b>Your diet plan right now</b> <span class="mute">(daily average from the Diet week tab)</span>' +
+    '<p style="margin:4px 0">Vitamin D ' + v('Vitamin D') + ' · Fiber ' + v('Fiber') + ' · Sodium ' + v('Sodium') + ' (limit) · Zinc ' + v('Zinc') + ' (UL 40) · Iron ' + v('Iron') + ' (UL 45)</p>' +
+    '<p class="mute" style="margin:4px 0">' + (low.length ? 'Below target: ' + low.join(', ') + '. ' : 'Vitamin D and fiber are at target. ') + 'Omega-3 is not tracked and the menu has no fatty fish. ' + (high.length ? 'Already high or near a limit: ' + high.map(x => x[0]).join(', ') + ', so skip extra supplements of those.' : '') + '</p>' +
+    '<div>' + btn('vitamin d', 'Vitamin D') + btn('fiber', 'Fiber') + btn('omega-3', 'Omega-3') + btn('zinc', 'Zinc') + btn('iron', 'Iron') + btn('sodium', 'Sodium') + '</div></div>';
+  return SUPP.shell(plan);
 }
 
 /* ---------- actions ---------- */
