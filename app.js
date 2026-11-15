@@ -224,11 +224,43 @@ function recipes() {
     '<li>Keep cheese, salsa and fresh veggies in a separate small container and add them when you reheat. Cooked rice and meat keep about 3 to 4 days in the fridge, so freeze the meals for days 5 to 7.</li>' +
     '<li>Rotate in the Chicken Burrito, Steak &amp; Tots Plate or Shrimp Tacos for variety without changing the formula of starch, protein and a little veggie.</li></ol></div>';
 
+
+  /* all other recipes, each with a servings scaler */
+  const RECIPES = [
+    ['Chicken, Rice', [
+      'Season the chicken breasts with salt, garlic, cumin and chili powder. Bake at 425 °F for about 20 to 25 minutes, or pan-sear or air-fry, until the thickest part reaches 165 °F (74 °C). Rest 5 minutes, then chop or shred.',
+      'Cook the rice. Warm the pinto beans and corn. Saute the peppers and onion until soft.',
+      'Warm the tortillas so they fold without tearing. Layer rice, beans, chicken, cheese, veggies and green salsa down the middle.',
+      'Roll tight and wrap each burrito in foil. Fridge for 3 to 4 days or freeze. Reheat in the microwave until steaming hot (165 °F).'
+    ]],
+    ['Steak & Tots', [
+      'Pat the sirloin dry and season with salt, pepper and garlic. Sear in a very hot pan or cast iron for about 3 to 5 minutes per side, until the center reaches at least 145 °F (63 °C) and then rest for 3 minutes, as USDA advises for whole cuts. Slice against the grain.',
+      'Bake the tots at about 425 °F for 20 to 25 minutes, flipping halfway (follow the bag).',
+      'Saute the peppers and onion in the olive oil. Warm the corn. Plate everything with green salsa on the side.',
+      'For meal prep, cook the steak a touch under and reheat gently so it does not turn tough. Keep for 3 to 4 days in the fridge.'
+    ]],
+    ['Shrimp Tacos', [
+      'Pat the shrimp dry and season with chili powder, garlic, cumin and a squeeze of lime. Saute in a hot pan for about 2 to 3 minutes per side, until pink and opaque all the way through.',
+      'Cook the rice. Saute the peppers and onion. Warm the corn.',
+      'Warm the corn tortillas in a dry pan for about 20 seconds per side.',
+      'Fill with shrimp, rice, cheese, avocado and green salsa. Shrimp keeps best for up to 3 days in the fridge, so eat these early in the week and reheat gently.'
+    ]]
+  ];
+  RECIPES.forEach(([pre, steps]) => {
+    const m = allMeals().find(x => x.name.startsWith(pre)); if (!m) return;
+    const mi = allMeals().indexOf(m), t = mealTotals(m), cur = (S.rec.sv || {})[m.name] || sv[m.name] || 4;
+    h += '<div class="card"><h3>' + esc(m.name) + '</h3>';
+    h += '<div class="row" style="margin-bottom:8px"><label>Servings to make <input type="number" min="1" max="30" step="1" value="' + cur + '" onchange="HFO.setSv(' + mi + ',this.value)"></label><span class="mute">Each: ' + fmt(t[0], 0) + ' kcal · ' + fmt(t[1], 1) + ' g protein · ' + fmt(t[4], 1) + ' g fiber</span></div>';
+    h += recTable(ingsOf(m).map(([f, g]) => ({ f, total: g * cur, cells: [Math.round(g), Math.round(g * cur).toLocaleString()] })), ['Per serving (g)', 'Total (g)']);
+    h += '<ol>' + steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></div>';
+  });
+
   /* shake and night glass */
   const sm = mealByName(M.shake);
   h += '<div class="card"><h3>' + esc(sm.name) + '</h3><p class="mute" style="margin:0 0 6px">' + ingsOf(sm).map(([f, g]) => esc(f) + ' ' + Math.round(g) + ' g').join(' · ') + '</p>' +
     '<ol><li>Pre-portion the banana, mango, spinach and chia into freezer bags on Sunday, one bag per day.</li><li>In the morning, blend a bag with the milk and whey until smooth. Add a splash more milk if it is too thick.</li></ol>' +
     '<p class="mute" style="margin-bottom:0">Night: ' + esc(M.night) + '. Pour and drink; nothing to prep.</p></div>';
+  h += '<div class="card"><h3>Other meals</h3><ul><li><b>Mass Gainer Shake (optional):</b> blend the whey, milk, banana and oats until smooth. Use it on days you are under on calories.</li><li><b>Costco pepperoni pizza:</b> nothing to prep. Eat it fresh at the food court, or reheat leftover slices in a skillet or oven so the crust stays crisp.</li></ul></div>';
 
   /* swaps */
   h += '<div class="card"><h3>Easy flavor swaps (almost no calories)</h3><ul>' +
@@ -342,6 +374,7 @@ window.HFO = {
   tab(k) { S.tab = k; render(); window.scrollTo(0, 0); },
   view(v) { S.view = v; S.tab = 'diet'; render(); },
   toggle(k) { S[k] = !S[k]; render(); },
+  setSv(mi, v) { const m = allMeals()[mi]; S.rec = S.rec || {}; S.rec.sv = S.rec.sv || {}; S.rec.sv[m.name] = Math.max(1, Math.min(30, Math.round(num(v)) || 1)); render(); },
   setBur(v) { S.rec = S.rec || {}; S.rec.burritos = Math.max(1, Math.min(60, Math.round(num(v)) || 14)); render(); },
 bought(k) { S.bought = S.bought || {}; if (S.bought[k]) delete S.bought[k]; else S.bought[k] = 1; render(); },
 clearBought() { S.bought = {}; render(); },
