@@ -44,7 +44,7 @@ window.DATA = {
    "yield": 0.75,
    "n": [
     165,
-    31.0,
+    31,
     0,
     3.6,
     0,
@@ -53,7 +53,7 @@ window.DATA = {
     15,
     1.04,
     29,
-    1.0,
+    1,
     6,
     0,
     0.1,
@@ -78,7 +78,7 @@ window.DATA = {
     18,
     2.6,
     21,
-    6.0,
+    6,
     0,
     0,
     0.1,
@@ -94,21 +94,21 @@ window.DATA = {
    "yield": 0.72,
    "n": [
     200,
-    28.0,
+    28,
     0,
-    9.0,
+    9,
     0,
     60,
     360,
     10,
     2.4,
     27,
-    5.0,
+    5,
     0,
     0,
     0.1,
     1.5,
-    2.0,
+    2,
     9
    ],
    "note": "Steak packs (sirloin / similar lean cuts)"
@@ -119,7 +119,7 @@ window.DATA = {
    "yield": 0.78,
    "n": [
     99,
-    24.0,
+    24,
     0.2,
     0.3,
     0,
@@ -141,7 +141,7 @@ window.DATA = {
   {
    "name": "Egg, whole",
    "cat": "Protein",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     155,
     12.6,
@@ -166,7 +166,7 @@ window.DATA = {
   {
    "name": "Egg whites (liquid)",
    "cat": "Protein",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     52,
     10.9,
@@ -178,7 +178,7 @@ window.DATA = {
     7,
     0.1,
     11,
-    0.0,
+    0,
     0,
     0,
     0,
@@ -191,7 +191,7 @@ window.DATA = {
   {
    "name": "Cheese, shredded cheddar / Mexican",
    "cat": "Dairy",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     403,
     22.9,
@@ -216,7 +216,7 @@ window.DATA = {
   {
    "name": "Milk, whole",
    "cat": "Dairy",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     61,
     3.2,
@@ -241,7 +241,7 @@ window.DATA = {
   {
    "name": "Whey protein (Nutricost vanilla)",
    "cat": "Supplement",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     361,
     69.4,
@@ -291,19 +291,19 @@ window.DATA = {
   {
    "name": "Pinto beans (canned, drained)",
    "cat": "Carb",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     143,
-    9.0,
+    9,
     26.2,
     0.7,
-    9.0,
+    9,
     250,
     436,
     46,
     2.1,
     50,
-    1.0,
+    1,
     0,
     0.8,
     0,
@@ -316,13 +316,13 @@ window.DATA = {
   {
    "name": "Flour tortilla (burrito size)",
    "cat": "Carb",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     306,
-    8.0,
-    50.0,
+    8,
+    50,
     7.7,
-    3.0,
+    3,
     690,
     150,
     150,
@@ -332,7 +332,7 @@ window.DATA = {
     0,
     0,
     0,
-    1.0,
+    1,
     0,
     100
    ],
@@ -341,7 +341,7 @@ window.DATA = {
   {
    "name": "Corn tortilla",
    "cat": "Carb",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     218,
     5.7,
@@ -353,7 +353,7 @@ window.DATA = {
     81,
     1.2,
     59,
-    1.0,
+    1,
     0,
     0,
     0,
@@ -366,7 +366,7 @@ window.DATA = {
   {
    "name": "Tater tots (frozen)",
    "cat": "Carb",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     186,
     2.3,
@@ -391,7 +391,7 @@ window.DATA = {
   {
    "name": "White corn (canned)",
    "cat": "Carb",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     48,
     0.8,
@@ -432,7 +432,7 @@ window.DATA = {
     1,
     9.6,
     0,
-    2.0,
+    2,
     0,
     28
    ],
@@ -444,7 +444,7 @@ window.DATA = {
    "yield": 0.85,
    "n": [
     90,
-    2.0,
+    2,
     20.7,
     0.2,
     3.3,
@@ -466,7 +466,7 @@ window.DATA = {
   {
    "name": "Oats (dry)",
    "cat": "Carb",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     389,
     16.9,
@@ -478,11 +478,11 @@ window.DATA = {
     54,
     4.7,
     177,
-    4.0,
+    4,
     0,
     0,
     0,
-    2.0,
+    2,
     0,
     56
    ],
@@ -491,7 +491,7 @@ window.DATA = {
   {
    "name": "Banana",
    "cat": "Fruit",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     89,
     1.1,
@@ -516,11 +516,11 @@ window.DATA = {
   {
    "name": "Bell pepper (red)",
    "cat": "Veggie",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     31,
-    1.0,
-    6.0,
+    1,
+    6,
     0.3,
     2.1,
     4,
@@ -541,7 +541,7 @@ window.DATA = {
   {
    "name": "Onion",
    "cat": "Veggie",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     40,
     1.1,
@@ -566,7 +566,7 @@ window.DATA = {
   {
    "name": "Spinach (raw)",
    "cat": "Veggie",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     23,
     2.9,
@@ -591,10 +591,10 @@ window.DATA = {
   {
    "name": "Avocado",
    "cat": "Fat",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     160,
-    2.0,
+    2,
     8.5,
     14.7,
     6.7,
@@ -616,11 +616,11 @@ window.DATA = {
   {
    "name": "Mango (frozen chunks)",
    "cat": "Fruit",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     60,
     0.8,
-    15.0,
+    15,
     0.4,
     1.6,
     2,
@@ -639,15 +639,65 @@ window.DATA = {
    "note": "Costco frozen fruit bags; vitamin A and C"
   },
   {
+   "name": "Blueberries (frozen)",
+   "cat": "Fruit",
+   "yield": 1,
+   "n": [
+    50,
+    0.7,
+    12.1,
+    0.7,
+    2.9,
+    0,
+    54,
+    7,
+    0.2,
+    5,
+    0.1,
+    2,
+    2.6,
+    0,
+    14,
+    0,
+    4
+   ],
+   "note": "Kirkland frozen blueberries, 5 lb bag. Label per 140 g: 70 kcal, 1 g fat, 17 g carbs, 4 g fiber, 1 g protein. Micronutrients are estimates."
+  },
+  {
+   "name": "Mixed berries (frozen)",
+   "cat": "Fruit",
+   "yield": 1,
+   "n": [
+    56,
+    1.2,
+    12.7,
+    0.4,
+    4,
+    0,
+    111,
+    24,
+    0.4,
+    16,
+    0.3,
+    2,
+    8.8,
+    0,
+    12,
+    0,
+    14
+   ],
+   "note": "Kirkland Three Berry Blend (raspberry, blueberry, blackberry), 4 lb bag. Label per 126 g: 70 kcal, 0 g fat, 16 g carbs, 5 g fiber (protein about 1 to 2 g). Micronutrients are estimates."
+  },
+  {
    "name": "Strawberries (frozen, unsweetened)",
    "cat": "Fruit",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     32,
     0.6,
     8.1,
     0.3,
-    2.0,
+    2,
     2,
     148,
     14,
@@ -666,7 +716,7 @@ window.DATA = {
   {
    "name": "Chia seeds",
    "cat": "Fat",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     486,
     16.5,
@@ -691,12 +741,12 @@ window.DATA = {
   {
    "name": "Chocolate milk (Darigold reduced fat)",
    "cat": "Dairy",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     88,
     4.4,
     13.2,
-    2.0,
+    2,
     0.2,
     80,
     251,
@@ -716,11 +766,11 @@ window.DATA = {
   {
    "name": "Green salsa (salsa verde)",
    "cat": "Sauce",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     30,
-    1.0,
-    6.0,
+    1,
+    6,
     0.3,
     1.5,
     600,
@@ -741,7 +791,7 @@ window.DATA = {
   {
    "name": "Olive oil",
    "cat": "Fat",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     884,
     0,
@@ -766,10 +816,10 @@ window.DATA = {
   {
    "name": "Costco pepperoni pizza slice",
    "cat": "Food court",
-   "yield": 1.0,
+   "yield": 1,
    "n": [
     268,
-    14.0,
+    14,
     30.9,
     9.9,
     2.9,
@@ -1243,6 +1293,18 @@ window.DATA = {
    "note": "Costco frozen fruit bag"
   },
   {
+   "food": "Blueberries (frozen)",
+   "unit": "bag (5 lb)",
+   "size": 2268,
+   "note": "Costco Kirkland frozen blueberries"
+  },
+  {
+   "food": "Mixed berries (frozen)",
+   "unit": "bag (4 lb)",
+   "size": 1814,
+   "note": "Costco Kirkland Three Berry Blend"
+  },
+  {
    "food": "Strawberries (frozen, unsweetened)",
    "unit": "bag (4 lb)",
    "size": 1814,
@@ -1561,7 +1623,7 @@ window.DATA = {
   {
    "day": "Friday",
    "muscle": "Chest",
-   "name": "30\u00b0 incline dumbbell press",
+   "name": "30° incline dumbbell press",
    "sets": 4,
    "reps": "8-10",
    "notes": ""
