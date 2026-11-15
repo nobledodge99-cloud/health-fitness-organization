@@ -28,7 +28,7 @@ function freshState() {
   return {
     tab: 'overview', view: 'avg', showAllMeals: false, showAllShop: false,
     targets: { bw: 200, goal: 240, rate: 0.5, maint: 16, prot: 1.0, fat: 0.55, fiber: 14 },
-    week: freshWeek(), mealIngs: {}, customMeals: [], pk: {},
+    week: freshWeek(), mealIngs: {}, customMeals: [], pk: {}, bought: {},
     ex: D.exercises.map(e => Object.assign({ load: '' }, e))
   };
 }
@@ -176,26 +176,42 @@ function meals() {
 }
 
 function shopping() {
-  const need = {};
-  DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, sv]) => {
-    const m = mealByName(n); if (!m || !sv) return;
-    ingsOf(m).forEach(([f, g]) => need[f] = (need[f] || 0) + g * sv);
-  }));
-  let h = '<h2>Shopping list</h2><p class="mute">Built from this week\'s Diet week plan (7 days). Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes in blue are assumptions: change them to what you actually buy.</p>';
-  h += `<div class="row" style="margin-bottom:10px"><button class="btn alt" onclick="HFO.toggle('showAllShop')">${S.showAllShop ? 'Show only what this week needs' : 'Show every food'}</button></div>`;
-  h += '<div class="card"><h3>Buy by weight (lb)</h3><div class="scroll"><table><tr><th>Food</th><th class="n">Needed (g, as eaten)</th><th class="n">Buy (lb, raw)</th><th class="n">Rounded up</th><th>Note</th></tr>';
-  D.lbfoods.forEach(f => {
-    const g = need[f] || 0; if (!g && !S.showAllShop) return;
-    const lb = g ? g / FOOD[f].yield / 453.592 : 0;
-    h += `<tr><td><b>${esc(f)}</b></td><td class="n">${Math.round(g).toLocaleString()}</td><td class="n">${g ? lb.toFixed(1) : ''}</td><td class="n">${g ? Math.ceil(lb) : ''}</td><td class="mute">${esc(FOOD[f].note)}</td></tr>`;
-  });
-  h += '</table></div></div><div class="card"><h3>Buy by package</h3><div class="scroll"><table><tr><th>Food</th><th class="n">Needed (g, as eaten)</th><th>Package</th><th class="n">Package size (g)</th><th class="n">Buy</th><th>Note</th></tr>';
-  D.pk.forEach((p, i) => {
-    const g = need[p.food] || 0; if (!g && !S.showAllShop) return;
-    const size = S.pk[p.food] || p.size;
-    h += `<tr><td><b>${esc(p.food)}</b></td><td class="n">${Math.round(g).toLocaleString()}</td><td>${esc(p.unit)}</td><td class="n edit"><input type="number" min="1" value="${size}" onchange="HFO.setPk(${i},this.value)"></td><td class="n"><b>${g ? Math.ceil(g / size) : ''}</b></td><td class="mute">${esc(p.note)}</td></tr>`;
-  });
-  return h + '</table></div></div>';
+const need = {};
+DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, sv]) => {
+const m = mealByName(n); if (!m || !sv) return;
+ingsOf(m).forEach(([f, g]) => need[f] = (need[f] || 0) + g * sv);
+}));
+const B = S.bought || (S.bought = {});
+const items = [];
+D.lbfoods.forEach(f => {
+const g = need[f] || 0; if (!g && !S.showAllShop) return;
+const lb = g ? g / FOOD[f].yield / 453.592 : 0;
+items.push({ key: f, name: f, sec: 'Meat, rice and cheese', qty: g ? Math.ceil(lb) + ' lb' : '-', sub: g ? lb.toFixed(1) + ' lb raw, ' + Math.round(g).toLocaleString() + ' g as eaten' : 'Not needed this week', note: FOOD[f].note });
+});
+D.pk.forEach((p, i) => {
+const g = need[p.food] || 0; if (!g && !S.showAllShop) return;
+const size = S.pk[p.food] || p.size;
+items.push({ key: p.food, name: p.food, sec: 'Packaged items', qty: g ? Math.ceil(g / size) + ' x ' + p.unit : '-', sub: Math.round(g).toLocaleString() + ' g as eaten', note: p.note, pk: i, size: size });
+});
+const done = items.filter(x => B[x.key]).length;
+let h = '<h2>Shopping list</h2>';
+h += '<div class="card shopbar"><div class="row" style="justify-content:space-between"><b>' + done + ' of ' + items.length + ' picked up</b><button class="btn sm alt" onclick="HFO.clearBought()">Uncheck all</button></div><div class="bar" style="margin-top:6px"><i style="width:' + (items.length ? Math.round(done / items.length * 100) : 0) + '%"></i></div></div>';
+h += '<p class="mute">Tap the circle on the right when you already have an item. Checked items drop to the bottom. Built from the Diet week plan (7 days). Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes are assumptions, so change them to what you actually buy.</p>';
+['Meat, rice and cheese', 'Packaged items'].forEach(sec => {
+const list = items.filter(x => x.sec === sec);
+if (!list.length) return;
+list.sort((a, b) => (B[a.key] ? 1 : 0) - (B[b.key] ? 1 : 0));
+h += '<h3>' + sec + '</h3><div class="shoplist">';
+list.forEach(x => {
+const on = !!B[x.key];
+h += '<div class="shop' + (on ? ' got' : '') + '"><div class="si"><div class="sn">' + esc(x.name) + '</div><div class="mute">' + esc(x.sub) + (x.note ? ' | ' + esc(x.note) : '') + '</div>';
+if (x.pk != null) h += '<div class="mute">Package size (g): <input type="number" min="1" value="' + x.size + '" onchange="HFO.setPk(' + x.pk + ',this.value)"></div>';
+h += '</div><div class="sq">' + esc(x.qty) + '</div><button class="bubble' + (on ? ' on' : '') + '" aria-pressed="' + on + '" aria-label="Already bought ' + esc(x.name) + '" data-k="' + esc(x.key) + '" onclick="HFO.bought(this.dataset.k)">' + (on ? '✓' : '') + '</button></div>';
+});
+h += '</div>';
+});
+h += '<div class="row" style="margin:6px 0 14px"><button class="btn alt" onclick="HFO.toggle(&quot;showAllShop&quot;)">' + (S.showAllShop ? 'Show only what this week needs' : 'Show every food') + '</button></div>';
+return h;
 }
 
 /* ---------- workout ---------- */
@@ -255,6 +271,8 @@ window.HFO = {
   tab(k) { S.tab = k; render(); window.scrollTo(0, 0); },
   view(v) { S.view = v; S.tab = 'diet'; render(); },
   toggle(k) { S[k] = !S[k]; render(); },
+bought(k) { S.bought = S.bought || {}; if (S.bought[k]) delete S.bought[k]; else S.bought[k] = 1; render(); },
+clearBought() { S.bought = {}; render(); },
   fill(d, p) { S.week[d] = p ? JSON.parse(JSON.stringify(PRESETS[p])) : {}; render(); },
   fillAll(p) { DAYS.forEach(d => S.week[d] = JSON.parse(JSON.stringify(PRESETS[p]))); render(); },
   resetWeek() { S.week = freshWeek(); render(); },
