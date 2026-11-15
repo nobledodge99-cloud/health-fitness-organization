@@ -263,7 +263,7 @@ function targets() {
   return h;
 }
 function supps() {
-  return '<h2>Supplements</h2><div class="card"><p>Coming soon. This page will use the same targets as the diet plan so supplements can fill vitamin gaps (your plan currently runs low on vitamin D).</p></div>';
+return '<h2>Supplements</h2><div class="card"><p>Searchable reference for protein, vitamins and minerals, performance aids, omega-3 and sleep and recovery, with doses, limits and how each one fits your diet plan.</p><p><a class="btn" href="supplements.html" style="text-decoration:none;display:inline-block;padding:10px 16px;font-size:15px">Open supplement reference</a></p></div>';
 }
 
 /* ---------- actions ---------- */
