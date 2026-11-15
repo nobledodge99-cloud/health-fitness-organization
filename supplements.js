@@ -226,6 +226,55 @@ P("Glutathione", ["glutathione", "gsh"], "Other compounds", "Antioxidant made by
 P("NAD+", ["nad", "nad+", "nmn", "nicotinamide riboside"], "Other compounds", "Cellular metabolism cofactor sold as a supplement and injectable.", "Supplement; injectables unapproved", "Limited human evidence for performance or aging claims."),
 P("TUDCA", ["tudca", "bile acid", "liver support"], "Other compounds", "Bile acid derivative sold as a supplement.", "Dietary supplement", "GI effects. It does not make liver-toxic drug use safe.")
 ];
+/* Mechanism of action and intended effect. Education only: no doses, cycles, sourcing or administration. */
+var MOA = {
+"Testosterone": ["Binds the androgen receptor directly and, after 5-alpha-reduction, as DHT. Part is aromatized to estradiol, which acts on estrogen receptors.", "Replaces deficient testosterone. Androgenic and anabolic effects include more muscle protein synthesis, lean mass, libido, red cell production and bone density."],
+"Anadrol (oxymetholone)": ["17-alpha-alkylated DHT derivative (so it survives oral use). Androgen receptor agonist that strongly stimulates red blood cell production.", "Approved for some anemias. In misuse, sought for rapid size and strength gain."],
+"Anavar (oxandrolone)": ["17-alpha-alkylated DHT derivative. Androgen receptor agonist that is not aromatized to estrogen.", "Anabolic effect. Medically used to promote weight regain after surgery, trauma or illness."],
+"Boldenone (Equipoise)": ["Testosterone derivative that agonizes the androgen receptor and is converted to estrogen to a lesser degree than testosterone.", "Increases lean mass, appetite and red cell mass. Developed for use in horses."],
+"Deca (nandrolone)": ["19-nortestosterone derivative. Androgen receptor agonist with a high anabolic-to-androgenic ratio and some progesterone-receptor activity.", "Anabolic effect. Medically used for wasting and anemia of kidney disease."],
+"Trenbolone": ["Potent 19-nortestosterone androgen receptor agonist that is not aromatized and also binds the progesterone receptor.", "Muscle growth and feed efficiency in cattle. Sought for the same in misuse."],
+"Winstrol (stanozolol)": ["17-alpha-alkylated DHT derivative. Androgen receptor agonist that is not aromatized.", "Anabolic effect. Historically used for hereditary angioedema, where it raises C1-inhibitor levels, and for anemia."],
+"Arimidex (anastrozole)": ["Reversible nonsteroidal inhibitor of aromatase (CYP19A1), the enzyme that converts androgens to estrogens.", "Lowers estrogen. Approved for hormone-receptor-positive breast cancer; used off-label to lower estradiol."],
+"Aromasin (exemestane)": ["Steroidal, irreversible inactivator of aromatase.", "Lowers estrogen. Approved for breast cancer."],
+"Enclomiphene": ["Estrogen receptor antagonist in the hypothalamus and pituitary. It blocks estrogen's negative feedback, so GnRH, LH and FSH rise.", "Raises the body's own testosterone production while keeping testicular function and fertility."],
+"hCG": ["Mimics luteinizing hormone (LH) and activates the LH receptor on Leydig cells, which makes testosterone.", "Keeps testicular size, testosterone and sperm production going. Also used to trigger ovulation."],
+"Finasteride": ["Inhibits type II (and III) 5-alpha-reductase, lowering conversion of testosterone to DHT by roughly 70% in blood.", "Slows hair loss and shrinks an enlarged prostate."],
+"Dutasteride": ["Inhibits type I and II 5-alpha-reductase, lowering DHT by roughly 90%.", "Shrinks an enlarged prostate. Used off-label for hair loss."],
+"HGH (somatropin)": ["Binds the growth hormone receptor (JAK2/STAT5 signaling) and drives IGF-1 production, mostly in the liver.", "Replaces missing growth hormone. Promotes growth, protein synthesis and fat breakdown."],
+"Tesamorelin": ["Growth-hormone-releasing hormone (GHRH) analog. Acts on the pituitary GHRH receptor to release growth hormone in its natural pulses, which raises IGF-1.", "Reduces visceral belly fat in HIV-associated lipodystrophy."],
+"CJC-1295": ["GHRH analog modified to last longer. Acts on the pituitary GHRH receptor to release growth hormone.", "Claimed: higher GH and IGF-1 for body composition and recovery. Human benefit is unproven."],
+"Ipamorelin": ["Agonist of the ghrelin (GHS-R1a) receptor, which triggers pituitary growth hormone release with little effect on cortisol or prolactin.", "Claimed: higher GH and IGF-1 for body composition and recovery. Human benefit is unproven."],
+"MK-677 (ibutamoren)": ["Oral nonpeptide ghrelin receptor agonist. Raises growth hormone and IGF-1 and stimulates appetite.", "Studied for raising GH/IGF-1 and lean mass in older adults. Sold for muscle and recovery."],
+"BPC-157": ["Fragment of a stomach protein. Animal studies suggest effects on new blood vessel growth (VEGF signaling), nitric oxide and growth factors. The human mechanism is not established.", "Claimed: faster healing of tendon, muscle, gut and other tissue. Human evidence is lacking."],
+"TB-500 (thymosin beta-4)": ["Synthetic fragment of thymosin beta-4. Proposed to bind actin and promote cell migration and blood vessel formation in animal studies.", "Claimed: tissue repair and recovery. Human evidence is lacking."],
+"GHK-Cu": ["Copper-binding tripeptide. In skin research it modulates collagen and glycosaminoglycan production, matrix metalloproteinases and antioxidant pathways.", "Cosmetic: skin firmness and wound healing. Hair-growth claims are weakly supported."],
+"MOTS-c": ["Peptide encoded in mitochondrial DNA. In rodents it activates AMPK and shifts metabolism, improving insulin sensitivity.", "Claimed: better metabolism and exercise capacity. Based on animal and early studies."],
+"Semax": ["Analog of an ACTH fragment (ACTH 4-10) without hormonal action. Proposed to raise BDNF and modulate dopamine and serotonin signaling.", "Cognitive support and neuroprotection; used for stroke recovery in Russia."],
+"Selank": ["Analog of the immune peptide tuftsin. Proposed to modulate GABA and serotonin signaling and slow enkephalin breakdown.", "Reduces anxiety. Approved for this in Russia."],
+"Bromantane": ["Raises dopamine production by increasing the enzymes that make it (tyrosine hydroxylase and DOPA decarboxylase).", "Stimulant and anxiolytic effect; used for fatigue in Russia."],
+"9-Me-BC": ["Beta-carboline. Cell and animal studies point to MAO inhibition and dopamine-neuron support.", "Claimed: neuroprotection and cognition. Preclinical only."],
+"Dihexa": ["Derivative of angiotensin IV that boosts hepatocyte growth factor (HGF) / c-Met signaling, increasing synapse formation in rodents.", "Claimed: memory and cognitive enhancement. Rodent data only."],
+"Semaglutide": ["GLP-1 receptor agonist. Raises glucose-dependent insulin, lowers glucagon, slows gastric emptying and acts in the brain to reduce appetite.", "Lowers blood sugar in type 2 diabetes and drives weight loss."],
+"Tirzepatide": ["Dual GIP and GLP-1 receptor agonist, combining the effects of both incretin hormones.", "Lowers blood sugar and drives weight loss."],
+"Retatrutide": ["Triple agonist at the GIP, GLP-1 and glucagon receptors. The glucagon component is thought to raise energy expenditure.", "Weight loss and blood sugar control, under study."],
+"Cagrilintide": ["Long-acting amylin analog that acts on amylin/calcitonin receptors to increase fullness.", "Appetite reduction and weight loss, under study (often combined with semaglutide)."],
+"Acarbose": ["Inhibits alpha-glucosidase enzymes in the gut, delaying carbohydrate digestion and absorption.", "Blunts the blood sugar spike after meals."],
+"Berberine": ["Plant alkaloid that activates AMPK and affects mitochondria and gut bacteria.", "Modest lowering of blood sugar and cholesterol."],
+"AICAR": ["Analog of AMP that activates the energy sensor AMPK, which is why it is called an exercise mimetic.", "Claimed: more endurance and fat burning. Evidence is from animals."],
+"Cardarine (GW-501516)": ["Agonist of PPAR-delta, which turns on genes for fatty-acid burning in muscle.", "Claimed: more endurance and fat loss. Never approved."],
+"5-Amino-1MQ": ["Inhibitor of NNMT, an enzyme in fat cells. Blocking it is proposed to raise NAD+ and energy use (mouse data).", "Claimed: fat loss. Preclinical only."],
+"Clenbuterol": ["Long-acting beta-2 adrenergic agonist. Relaxes airway muscle, and at high exposure boosts fat breakdown and muscle growth in animals.", "Bronchodilator in some countries. Misused for fat loss."],
+"Glutathione": ["Tripeptide made of cysteine, glycine and glutamate. A major antioxidant and a cofactor for detoxification enzymes.", "Antioxidant support. Skin-lightening claims are also marketed."],
+"NAD+": ["Coenzyme in energy metabolism, and a substrate for sirtuins and PARP enzymes. Levels fall with age.", "Claimed: more energy and healthier aging. Human evidence is limited."],
+"TUDCA": ["Water-soluble bile acid that improves bile flow and may reduce cell stress in the liver.", "Liver and bile support. Related ursodiol is approved for certain cholestatic liver disease."]
+};
+PEDS.forEach(function (it) {
+  var m = MOA[it.n]; if (!m) return;
+  it.d = { moa: m[0], intended: m[1], status: it.st, risk: it.d.risk };
+  it.s = it.s;
+});
+
 ITEMS = ITEMS.concat(PEDS);
 
 var OVERVIEW = [
@@ -290,7 +339,7 @@ function draw(keep) {
   if (!list.length) { $("sp-out").innerHTML = pre + '<div class="sp-empty">Nothing matches. Try a different word, or clear the filters.</div>'; return; }
   var render = function (p) {
     var it = p[0], i = p[1], isOpen = open[i] || auto, d = it.d;
-    var rows = (it.k ? [["Status", d.status], ["Main risks", d.risk]] : [["Typical dose", d.dose], ["Timing", d.timing], ["Safety / limits", d.safety], ["Cautions", d.cautions], ["Food sources", d.food]]).filter(function (r) { return r[1]; });
+    var rows = (it.k ? [["How it works", d.moa], ["Intended effect", d.intended], ["Status", d.status], ["Main risks", d.risk]] : [["Typical dose", d.dose], ["Timing", d.timing], ["Safety / limits", d.safety], ["Cautions", d.cautions], ["Food sources", d.food]]).filter(function (r) { return r[1]; });
     return '<div class="sp-card' + (isOpen ? " open" : "") + '"><div class="sp-head" onclick="SUPP.toggle(' + i + ')"><div><div class="sp-nm">' + hl(it.n, toks) + '</div><div class="sp-sum">' + hl(it.s, toks) + '</div><div class="sp-glance"><b>At a glance:</b> ' + hl(it.g, toks) + '</div></div>' +
       '<div class="sp-badges"><span class="sp-badge e-' + it.e + '">' + (it.k ? "Overview only" : it.e + " evidence") + '</span>' + (it.tag !== "none" ? '<span class="sp-badge t-' + it.tag + '">' + TAGTXT[it.tag] + '</span>' : "") + '</div></div>' +
       '<div class="sp-body">' + rows.map(function (r) { return '<div class="sp-row"><div class="k">' + r[0] + '</div><div>' + hl(r[1], toks) + '</div></div>'; }).join("") +
