@@ -28,7 +28,7 @@ function freshState() {
   return {
     tab: 'overview', view: 'avg', showAllMeals: false, showAllShop: false,
     targets: { bw: 200, goal: 240, rate: 0.5, maint: 16, prot: 1.0, fat: 0.55, fiber: 14 },
-    week: freshWeek(), rec: { burritos: 14 }, mealIngs: {}, customMeals: [], pk: {}, bought: {},
+    week: freshWeek(), prep: {}, mealIngs: {}, customMeals: [], pk: {}, bought: {},
     ex: D.exercises.map(e => Object.assign({ load: '' }, e))
   };
 }
@@ -178,6 +178,16 @@ function meals() {
 }
 
 
+
+/* servings planned on the Diet week tab, and what actually gets prepped and bought */
+function plannedSv(name) {
+  let t = 0;
+  DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, sv]) => { if (n === name && sv) t += sv; }));
+  return t;
+}
+function prepSv(name) { const o = (S.prep || {})[name]; return o == null ? plannedSv(name) : o; }
+function buySv(name) { return Math.max(plannedSv(name), (S.prep || {})[name] || 0); }
+
 /* ---------- recipes & prep ---------- */
 function buyCell(f, g) {
   const fd = FOOD[f]; if (!fd) return '';
@@ -190,15 +200,22 @@ function recTable(rows, cols) {
   rows.forEach(r => { h += '<tr><td>' + esc(r.f) + '</td>' + r.cells.map(c => '<td class="n">' + c + '</td>').join('') + '<td class="n">' + buyCell(r.f, r.total) + '</td></tr>'; });
   return h + '</table></div>';
 }
+function planNote(name) {
+  const pl = plannedSv(name), pr = prepSv(name);
+  let t = 'This week\'s Diet week plan has ' + pl + ' serving' + (pl === 1 ? '' : 's') + '. ';
+  if (pr > pl) t += 'You are prepping ' + (pr - pl) + ' extra, and the shopping list includes them. ';
+  else if (pr < pl) t += 'The shopping list still buys for all ' + pl + ' on the plan. ';
+  else t += 'The shopping list matches this number. ';
+  if (S.prep && S.prep[name] != null) t += '<button class="btn sm alt" onclick="HFO.resetSv(\'' + name.replace(/'/g, "\\'") + '\')">Use the plan number</button>';
+  return '<p class="mute" style="margin:0 0 8px">' + t + '</p>';
+}
 function recipes() {
-  S.rec = S.rec || { burritos: 14 };
-  const n = Math.max(1, Math.round(S.rec.burritos || 14));
   let h = '<h2>Recipes &amp; prep</h2><p class="mute">Quantities come from the gram amounts on your Meals tab, so if you change a meal there, this page updates too.</p>';
 
   /* breakfast burrito batch */
-  const bm = mealByName(M.burrito), bi = ingsOf(bm), bt = mealTotals(bm);
+  const bm = mealByName(M.burrito), bi = ingsOf(bm), bt = mealTotals(bm), n = prepSv(bm.name);
   h += '<div class="card"><h3>' + esc(bm.name) + ': Saturday / Sunday batch</h3>';
-  h += '<div class="row" style="margin-bottom:8px"><label>Burritos to make <input type="number" min="1" max="60" step="1" value="' + n + '" onchange="HFO.setBur(this.value)"></label><span class="mute">Each: ' + fmt(bt[0], 0) + ' kcal · ' + fmt(bt[1], 1) + ' g protein · ' + fmt(bt[4], 1) + ' g fiber</span></div>';
+  h += '<div class="row" style="margin-bottom:8px"><label>Burritos to make <input type="number" min="0" max="60" step="1" value="' + n + '" onchange="HFO.setSv(' + allMeals().indexOf(bm) + ',this.value)"></label><span class="mute">Each: ' + fmt(bt[0], 0) + ' kcal · ' + fmt(bt[1], 1) + ' g protein · ' + fmt(bt[4], 1) + ' g fiber</span></div>' + planNote(bm.name);
   h += recTable(bi.map(([f, g]) => ({ f, total: g * n, cells: [Math.round(g), Math.round(g * n).toLocaleString()] })), ['Per burrito (g)', 'Batch total (g)']);
   h += '<p class="mute">Beef and rice weights are cooked; "Buy (raw)" converts back to the weight you buy. Tortillas, tots, veggies and salsa are on the Shopping tab.</p>';
   h += '<ol>' +
@@ -209,11 +226,12 @@ function recipes() {
     '<li>Reheat from the fridge for about 1.5 to 2 minutes in the microwave, or from frozen for about 3 to 4 minutes, flipping halfway. Heat until steaming hot (165 °F / 74 °C).</li></ol></div>';
 
   /* lunch and dinner batch from the week plan */
+  const CARD = ['Beef, Egg', 'Chicken, Rice', 'Steak & Tots', 'Shrimp Tacos'];
   const sv = {};
-  DAYS.forEach(d => ['lunch', 'dinner'].forEach(k => { const c = (S.week[d] || {})[k]; if (c && c[0] && c[1] && c[0].indexOf('Pizza') < 0) sv[c[0]] = (sv[c[0]] || 0) + c[1]; }));
+  DAYS.forEach(d => ['lunch', 'dinner'].forEach(k => { const c = (S.week[d] || {})[k]; if (c && c[0] && c[1] && c[0].indexOf('Pizza') < 0 && !CARD.some(x => c[0].startsWith(x))) sv[c[0]] = (sv[c[0]] || 0) + c[1]; }));
   h += '<div class="card"><h3>Lunch &amp; dinner prep (Sunday)</h3>';
   const names = Object.keys(sv);
-  if (!names.length) h += '<p class="mute">No lunches or dinners are planned yet. Set them on the Diet week tab.</p>';
+  if (!names.length) h += '<p class="mute">No other lunches or dinners are planned. The recipes below cover the rest, and you can plan meals on the Diet week tab.</p>';
   names.forEach(nm => {
     const m = mealByName(nm); if (!m) return;
     h += '<h4 style="margin:10px 0 4px">' + esc(nm) + ' <span class="mute">· ' + sv[nm] + ' servings this week</span></h4>';
@@ -248,9 +266,9 @@ function recipes() {
   ];
   RECIPES.forEach(([pre, steps]) => {
     const m = allMeals().find(x => x.name.startsWith(pre)); if (!m) return;
-    const mi = allMeals().indexOf(m), t = mealTotals(m), cur = (S.rec.sv || {})[m.name] || sv[m.name] || 4;
+    const mi = allMeals().indexOf(m), t = mealTotals(m), cur = prepSv(m.name);
     h += '<div class="card"><h3>' + esc(m.name) + '</h3>';
-    h += '<div class="row" style="margin-bottom:8px"><label>Servings to make <input type="number" min="1" max="30" step="1" value="' + cur + '" onchange="HFO.setSv(' + mi + ',this.value)"></label><span class="mute">Each: ' + fmt(t[0], 0) + ' kcal · ' + fmt(t[1], 1) + ' g protein · ' + fmt(t[4], 1) + ' g fiber</span></div>';
+    h += '<div class="row" style="margin-bottom:8px"><label>Servings to make <input type="number" min="0" max="30" step="1" value="' + cur + '" onchange="HFO.setSv(' + mi + ',this.value)"></label><span class="mute">Each: ' + fmt(t[0], 0) + ' kcal · ' + fmt(t[1], 1) + ' g protein · ' + fmt(t[4], 1) + ' g fiber</span></div>' + planNote(m.name);
     h += recTable(ingsOf(m).map(([f, g]) => ({ f, total: g * cur, cells: [Math.round(g), Math.round(g * cur).toLocaleString()] })), ['Per serving (g)', 'Total (g)']);
     h += '<ol>' + steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></div>';
   });
@@ -271,10 +289,10 @@ function recipes() {
 
 function shopping() {
 const need = {};
-DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, sv]) => {
-const m = mealByName(n); if (!m || !sv) return;
+allMeals().forEach(m => {
+const sv = buySv(m.name); if (!sv) return;
 ingsOf(m).forEach(([f, g]) => need[f] = (need[f] || 0) + g * sv);
-}));
+});
 const B = S.bought || (S.bought = {});
 const items = [];
 D.lbfoods.forEach(f => {
@@ -290,7 +308,7 @@ items.push({ key: p.food, name: p.food, sec: 'Packaged items', qty: g ? Math.cei
 const done = items.filter(x => B[x.key]).length;
 let h = '<h2>Shopping list</h2>';
 h += '<div class="card shopbar"><div class="row" style="justify-content:space-between"><b>' + done + ' of ' + items.length + ' picked up</b><button class="btn sm alt" onclick="HFO.clearBought()">Uncheck all</button></div><div class="bar" style="margin-top:6px"><i style="width:' + (items.length ? Math.round(done / items.length * 100) : 0) + '%"></i></div></div>';
-h += '<p class="mute">Tap the circle on the right when you already have an item. Checked items drop to the bottom. Built from the Diet week plan (7 days). Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes are assumptions, so change them to what you actually buy.</p>';
+h += '<p class="mute">Tap the circle on the right when you already have an item. Checked items drop to the bottom. Built from the Diet week plan, plus any extra servings you set on the Recipes &amp; prep tab, so the two tabs always match. Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes are assumptions, so change them to what you actually buy.</p>';
 ['Meat, rice and cheese', 'Packaged items'].forEach(sec => {
 const list = items.filter(x => x.sec === sec);
 if (!list.length) return;
@@ -374,8 +392,8 @@ window.HFO = {
   tab(k) { S.tab = k; render(); window.scrollTo(0, 0); },
   view(v) { S.view = v; S.tab = 'diet'; render(); },
   toggle(k) { S[k] = !S[k]; render(); },
-  setSv(mi, v) { const m = allMeals()[mi]; S.rec = S.rec || {}; S.rec.sv = S.rec.sv || {}; S.rec.sv[m.name] = Math.max(1, Math.min(30, Math.round(num(v)) || 1)); render(); },
-  setBur(v) { S.rec = S.rec || {}; S.rec.burritos = Math.max(1, Math.min(60, Math.round(num(v)) || 14)); render(); },
+  setSv(mi, v) { const m = allMeals()[mi]; S.prep = S.prep || {}; S.prep[m.name] = Math.max(0, Math.min(60, Math.round(num(v)))); render(); },
+  resetSv(name) { if (S.prep) delete S.prep[name]; render(); },
 bought(k) { S.bought = S.bought || {}; if (S.bought[k]) delete S.bought[k]; else S.bought[k] = 1; render(); },
 clearBought() { S.bought = {}; render(); },
   fill(d, p) { S.week[d] = p ? JSON.parse(JSON.stringify(PRESETS[p])) : {}; render(); },
