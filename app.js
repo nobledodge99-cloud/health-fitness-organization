@@ -28,7 +28,7 @@ function freshState() {
   return {
     tab: 'overview', view: 'avg', showAllMeals: false, showAllShop: false,
     targets: { bw: 200, goal: 240, rate: 0.5, maint: 16, prot: 1.0, fat: 0.55, fiber: 14 },
-    week: freshWeek(), prep: {}, mealIngs: {}, customMeals: [], pk: {}, bought: {},
+    week: freshWeek(), prep: {}, weeks: 2, mealIngs: {}, customMeals: [], pk: {}, bought: {},
     ex: D.exercises.map(e => Object.assign({ load: '' }, e))
   };
 }
@@ -180,11 +180,12 @@ function meals() {
 
 
 /* servings planned on the Diet week tab, and what actually gets prepped and bought */
-function plannedSv(name) {
+function weekSv(name) {
   let t = 0;
   DAYS.forEach(d => Object.values(S.week[d] || {}).forEach(([n, sv]) => { if (n === name && sv) t += sv; }));
   return t;
 }
+function plannedSv(name) { return weekSv(name) * (S.weeks || 1); }
 function prepSv(name) { const o = (S.prep || {})[name]; return o == null ? plannedSv(name) : o; }
 function buySv(name) { return Math.max(plannedSv(name), (S.prep || {})[name] || 0); }
 
@@ -200,9 +201,30 @@ function recTable(rows, cols) {
   rows.forEach(r => { h += '<tr><td>' + esc(r.f) + '</td>' + r.cells.map(c => '<td class="n">' + c + '</td>').join('') + '<td class="n">' + buyCell(r.f, r.total) + '</td></tr>'; });
   return h + '</table></div>';
 }
+
+const FRESH = {
+  'Spinach (raw)': 'Fresh spinach lasts about 5 to 7 days. Freeze portions for the shake and burritos, or buy a second small tub for week 2.',
+  'Banana': 'Ripens in about 5 to 7 days. Peel and freeze the week-2 bananas for the shake.',
+  'Avocado': 'Ripens fast. Buy half now and half later.',
+  'Bell pepper (red)': 'Whole peppers keep about 1 to 2 weeks. Dice and freeze the extras.',
+  'Milk, whole': 'Buy for the block and freeze one gallon (pour a cup out first so it can expand). Thaw it in the fridge.',
+  'Chocolate milk (Darigold reduced fat)': 'Check the date on the carton and buy to fit it.',
+  'Egg whites (liquid)': 'Check the use-by date. Opened cartons keep about a week, so freeze the next one for later.',
+  'Chicken breast (cooked)': 'Raw chicken keeps only 1 to 2 days in the fridge. Cook it in batches and freeze the rest.',
+  'Ground beef 85/15 (cooked)': 'Raw ground beef keeps 1 to 2 days in the fridge. Cook it in batches and freeze half.',
+  'Sirloin steak (cooked)': 'Raw steak keeps a few days in the fridge. Freeze what you will not cook soon.',
+  'Shrimp (cooked)': 'Keep frozen until the day before you cook it. Cooked shrimp lasts about 3 days.',
+  'White rice (cooked)': 'Dry rice keeps for ages. Cook it weekly and freeze portions.',
+  'Flour tortilla (burrito size)': 'Keeps about 1 to 2 weeks. Freeze what you will not use that week.'
+};
+const NOT_TRACKED = 'Garlic, cumin, chili powder, taco or fajita seasoning, salt and pepper, limes, cilantro and jalapenos for flavor; cooking oil or spray; foil or parchment for wrapping burritos; freezer bags; and meal-prep containers. Costco pack sizes also differ from the ones assumed here, so adjust the package sizes under each item.';
+function blockBar() {
+  const w = S.weeks || 1;
+  return '<div class="card"><div class="row"><b>Shop and prep for</b><select onchange="HFO.setWeeks(this.value)">' + [1, 2, 3, 4].map(x => '<option value="' + x + '"' + (x === w ? ' selected' : '') + '>' + x + ' week' + (x > 1 ? 's' : '') + '</option>').join('') + '</select></div><p class="mute" style="margin:6px 0 0">The Recipes &amp; prep and Shopping tabs both scale to this block of your Diet week plan.</p></div>';
+}
 function planNote(name) {
   const pl = plannedSv(name), pr = prepSv(name);
-  let t = 'This week\'s Diet week plan has ' + pl + ' serving' + (pl === 1 ? '' : 's') + '. ';
+  let t = 'Your Diet week plan for ' + (S.weeks || 1) + ' week' + ((S.weeks || 1) > 1 ? 's' : '') + ' has ' + pl + ' serving' + (pl === 1 ? '' : 's') + '. ';
   if (pr > pl) t += 'You are prepping ' + (pr - pl) + ' extra, and the shopping list includes them. ';
   else if (pr < pl) t += 'The shopping list still buys for all ' + pl + ' on the plan. ';
   else t += 'The shopping list matches this number. ';
@@ -210,7 +232,7 @@ function planNote(name) {
   return '<p class="mute" style="margin:0 0 8px">' + t + '</p>';
 }
 function recipes() {
-  let h = '<h2>Recipes &amp; prep</h2><p class="mute">Quantities come from the gram amounts on your Meals tab, so if you change a meal there, this page updates too.</p>';
+  let h = '<h2>Recipes &amp; prep</h2>' + blockBar() + '<p class="mute">Quantities come from the gram amounts on your Meals tab, so if you change a meal there, this page updates too.</p>';
 
   /* breakfast burrito batch */
   const bm = mealByName(M.burrito), bi = ingsOf(bm), bt = mealTotals(bm), n = prepSv(bm.name);
@@ -228,14 +250,14 @@ function recipes() {
   /* lunch and dinner batch from the week plan */
   const CARD = ['Beef, Egg', 'Chicken, Rice', 'Steak & Tots', 'Shrimp Tacos'];
   const sv = {};
-  DAYS.forEach(d => ['lunch', 'dinner'].forEach(k => { const c = (S.week[d] || {})[k]; if (c && c[0] && c[1] && c[0].indexOf('Pizza') < 0 && !CARD.some(x => c[0].startsWith(x))) sv[c[0]] = (sv[c[0]] || 0) + c[1]; }));
+  DAYS.forEach(d => ['lunch', 'dinner'].forEach(k => { const c = (S.week[d] || {})[k]; if (c && c[0] && c[1] && c[0].indexOf('Pizza') < 0 && !CARD.some(x => c[0].startsWith(x))) sv[c[0]] = (sv[c[0]] || 0) + c[1] * (S.weeks || 1); }));
   h += '<div class="card"><h3>Lunch &amp; dinner prep (Sunday)</h3>';
   const names = Object.keys(sv);
   if (!names.length) h += '<p class="mute">No other lunches or dinners are planned. The recipes below cover the rest, and you can plan meals on the Diet week tab.</p>';
   names.forEach(nm => {
     const m = mealByName(nm); if (!m) return;
-    h += '<h4 style="margin:10px 0 4px">' + esc(nm) + ' <span class="mute">· ' + sv[nm] + ' servings this week</span></h4>';
-    h += recTable(ingsOf(m).map(([f, g]) => ({ f, total: g * sv[nm], cells: [Math.round(g), Math.round(g * sv[nm]).toLocaleString()] })), ['Per serving (g)', 'Week total (g)']);
+    h += '<h4 style="margin:10px 0 4px">' + esc(nm) + ' <span class="mute">· ' + sv[nm] + ' servings in this block</span></h4>';
+    h += recTable(ingsOf(m).map(([f, g]) => ({ f, total: g * sv[nm], cells: [Math.round(g), Math.round(g * sv[nm]).toLocaleString()] })), ['Per serving (g)', 'Block total (g)']);
   });
   h += '<ol>' +
     '<li>Cook a big pot of rice and portion it into containers. Brown the ground beef (or cook chicken on a sheet pan) and portion by weight using the gram amounts above.</li>' +
@@ -298,17 +320,17 @@ const items = [];
 D.lbfoods.forEach(f => {
 const g = need[f] || 0; if (!g && !S.showAllShop) return;
 const lb = g ? g / FOOD[f].yield / 453.592 : 0;
-items.push({ key: f, name: f, sec: 'Meat, rice and cheese', qty: g ? Math.ceil(lb) + ' lb' : '-', sub: g ? lb.toFixed(1) + ' lb raw, ' + Math.round(g).toLocaleString() + ' g as eaten' : 'Not needed this week', note: FOOD[f].note });
+items.push({ key: f, name: f, sec: 'Meat, rice and cheese', qty: g ? Math.ceil(lb) + ' lb' : '-', sub: g ? lb.toFixed(1) + ' lb raw, ' + Math.round(g).toLocaleString() + ' g as eaten' : 'Not needed this block', note: FOOD[f].note, fresh: FRESH[f] });
 });
 D.pk.forEach((p, i) => {
 const g = need[p.food] || 0; if (!g && !S.showAllShop) return;
 const size = S.pk[p.food] || p.size;
-items.push({ key: p.food, name: p.food, sec: 'Packaged items', qty: g ? Math.ceil(g / size) + ' x ' + p.unit : '-', sub: Math.round(g).toLocaleString() + ' g as eaten', note: p.note, pk: i, size: size });
+items.push({ key: p.food, name: p.food, sec: 'Packaged items', qty: g ? Math.ceil(g / size) + ' x ' + p.unit : '-', sub: Math.round(g).toLocaleString() + ' g as eaten', note: p.note, pk: i, size: size, fresh: FRESH[p.food] });
 });
 const done = items.filter(x => B[x.key]).length;
-let h = '<h2>Shopping list</h2>';
+let h = '<h2>Shopping list</h2>' + blockBar();
 h += '<div class="card shopbar"><div class="row" style="justify-content:space-between"><b>' + done + ' of ' + items.length + ' picked up</b><button class="btn sm alt" onclick="HFO.clearBought()">Uncheck all</button></div><div class="bar" style="margin-top:6px"><i style="width:' + (items.length ? Math.round(done / items.length * 100) : 0) + '%"></i></div></div>';
-h += '<p class="mute">Tap the circle on the right when you already have an item. Checked items drop to the bottom. Built from the Diet week plan, plus any extra servings you set on the Recipes &amp; prep tab, so the two tabs always match. Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes are assumptions, so change them to what you actually buy.</p>';
+h += '<p class="mute">Tap the circle on the right when you already have an item. Checked items drop to the bottom. Built from the Diet week plan, plus any extra servings you set on the Recipes &amp; prep tab, so the two tabs always match. Quantities cover the block length you pick above. Meat, rice and cheese are in raw pounds; everything else is in packages. Package sizes are assumptions, so change them to what you actually buy.</p>';
 ['Meat, rice and cheese', 'Packaged items'].forEach(sec => {
 const list = items.filter(x => x.sec === sec);
 if (!list.length) return;
@@ -317,12 +339,14 @@ h += '<h3>' + sec + '</h3><div class="shoplist">';
 list.forEach(x => {
 const on = !!B[x.key];
 h += '<div class="shop' + (on ? ' got' : '') + '"><div class="si"><div class="sn">' + esc(x.name) + '</div><div class="mute">' + esc(x.sub) + (x.note ? ' | ' + esc(x.note) : '') + '</div>';
+if (x.fresh && (S.weeks || 1) > 1) h += '<div class="mute"><b>Storage:</b> ' + esc(x.fresh) + '</div>';
 if (x.pk != null) h += '<div class="mute">Package size (g): <input type="number" min="1" value="' + x.size + '" onchange="HFO.setPk(' + x.pk + ',this.value)"></div>';
 h += '</div><div class="sq">' + esc(x.qty) + '</div><button class="bubble' + (on ? ' on' : '') + '" aria-pressed="' + on + '" aria-label="Already bought ' + esc(x.name) + '" data-k="' + esc(x.key) + '" onclick="HFO.bought(this.dataset.k)">' + (on ? '✓' : '') + '</button></div>';
 });
 h += '</div>';
 });
-h += '<div class="row" style="margin:6px 0 14px"><button class="btn alt" onclick="HFO.toggle(&quot;showAllShop&quot;)">' + (S.showAllShop ? 'Show only what this week needs' : 'Show every food') + '</button></div>';
+h += '<div class="card"><h3>Not tracked on this list</h3><p class="mute" style="margin:0">' + esc(NOT_TRACKED) + '</p></div>';
+h += '<div class="row" style="margin:6px 0 14px"><button class="btn alt" onclick="HFO.toggle(&quot;showAllShop&quot;)">' + (S.showAllShop ? 'Show only what this block needs' : 'Show every food') + '</button></div>';
 return h;
 }
 
@@ -393,6 +417,7 @@ window.HFO = {
   view(v) { S.view = v; S.tab = 'diet'; render(); },
   toggle(k) { S[k] = !S[k]; render(); },
   setSv(mi, v) { const m = allMeals()[mi]; S.prep = S.prep || {}; S.prep[m.name] = Math.max(0, Math.min(60, Math.round(num(v)))); render(); },
+  setWeeks(v) { S.weeks = Math.max(1, Math.min(4, Math.round(num(v)) || 1)); render(); },
   resetSv(name) { if (S.prep) delete S.prep[name]; render(); },
 bought(k) { S.bought = S.bought || {}; if (S.bought[k]) delete S.bought[k]; else S.bought[k] = 1; render(); },
 clearBought() { S.bought = {}; render(); },
