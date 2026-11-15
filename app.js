@@ -254,7 +254,6 @@ function cookCard(c, compact) {
     if (W > 1) h += '<p class="mute" style="margin:4px 0">Every other ' + c + ' (no burritos): ' + (wk.join(' · ') || 'nothing') + '</p>';
   } else h += '<p class="mute" style="margin:4px 0">Raw to cook: ' + (wk.join(' · ') || 'nothing') + '</p>';
   h += '<p class="mute" style="margin:4px 0 0">No rice today. Cook it fresh each morning.</p>';
-  if (!compact) h += '<p class="mute" style="margin:4px 0 0">Thaw any frozen meat in the fridge the day before.</p>';
   return h + '</div>';
 }
 function riceCard(day, compact) {
@@ -288,21 +287,7 @@ function recTable(rows, cols) {
   return h + '</table></div>';
 }
 
-const FRESH = {
-  'Spinach (raw)': 'Fresh spinach lasts about 5 to 7 days. Freeze portions for the shake and burritos, or buy a second small tub for week 2.',
-  'Banana': 'Ripens in about 5 to 7 days. Peel and freeze the week-2 bananas for the shake.',
-  'Avocado': 'Ripens fast. Buy half now and half later.',
-  'Bell pepper (red)': 'Whole peppers keep about 1 to 2 weeks. Dice and freeze the extras.',
-  'Milk, whole': 'Buy for the block and freeze one gallon (pour a cup out first so it can expand). Thaw it in the fridge.',
-  'Chocolate milk (Darigold reduced fat)': 'Check the date on the carton and buy to fit it.',
-  'Egg whites (liquid)': 'Check the use-by date. Opened cartons keep about a week, so freeze the next one for later.',
-  'Chicken breast (cooked)': 'Raw chicken keeps only 1 to 2 days in the fridge. Cook it in batches and freeze the rest.',
-  'Ground beef 85/15 (cooked)': 'Raw ground beef keeps 1 to 2 days in the fridge. Cook it in batches and freeze half.',
-  'Sirloin steak (cooked)': 'Raw steak keeps a few days in the fridge. Freeze what you will not cook soon.',
-  'Shrimp (cooked)': 'Keep frozen until the day before you cook it. Cooked shrimp lasts about 3 days.',
-  'White rice (cooked)': 'Dry rice keeps for ages. Cook it weekly and freeze portions.',
-  'Flour tortilla (burrito size)': 'Keeps about 1 to 2 weeks. Freeze what you will not use that week.'
-};
+const FRESH = {};
 const NOT_TRACKED = 'Garlic, cumin, chili powder, taco or fajita seasoning, salt and pepper, limes, cilantro and jalapenos for flavor; cooking oil or spray; foil or parchment for wrapping burritos; freezer bags; and meal-prep containers. Costco pack sizes also differ from the ones assumed here, so adjust the package sizes under each item.';
 function blockBar() {
   const w = S.weeks || 1;
@@ -347,7 +332,7 @@ function recipes() {
   });
   h += '<ol>' +
     '<li>Cook a big pot of rice and portion it into containers. Brown the ground beef (or cook chicken on a sheet pan) and portion by weight using the gram amounts above.</li>' +
-    '<li>Keep cheese, salsa and fresh veggies in a separate small container and add them when you reheat. Cooked rice and meat keep about 3 to 4 days in the fridge, so freeze the meals for days 5 to 7.</li>' +
+    '<li>Keep cheese, salsa and fresh veggies in a separate small container and add them when you reheat.</li>' +
     '<li>Rotate in the Chicken Burrito, Steak &amp; Tots Plate or Shrimp Tacos for variety without changing the formula of starch, protein and a little veggie.</li></ol></div>';
 
 
@@ -425,7 +410,7 @@ h += '<h3>' + sec + '</h3><div class="shoplist">';
 list.forEach(x => {
 const on = !!B[x.key];
 h += '<div class="shop' + (on ? ' got' : '') + '"><div class="si"><div class="sn">' + esc(x.name) + '</div><div class="mute">' + esc(x.sub) + (x.note ? ' | ' + esc(x.note) : '') + '</div>';
-if (x.fresh && (S.weeks || 1) > 1) h += '<div class="mute"><b>Storage:</b> ' + esc(x.fresh) + '</div>';
+
 if (x.pk != null) h += '<div class="mute">Package size (g): <input type="number" min="1" value="' + x.size + '" onchange="HFO.setPk(' + x.pk + ',this.value)"></div>';
 h += '</div><div class="sq">' + esc(x.qty) + '</div><button class="bubble' + (on ? ' on' : '') + '" aria-pressed="' + on + '" aria-label="Already bought ' + esc(x.name) + '" data-k="' + esc(x.key) + '" onclick="HFO.bought(this.dataset.k)">' + (on ? '✓' : '') + '</button></div>';
 });
