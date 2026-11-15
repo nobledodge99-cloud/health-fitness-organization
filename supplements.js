@@ -176,6 +176,70 @@ var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
 var TAGTXT = { consider: "Consider for your plan", ok: "Plan covers it", caution: "Watch: plan already high" };
 
+var PEDCLS = "Hormones & peptides";
+CLASSES.push(PEDCLS);
+/* Overview-only entries (no doses, cycles, sourcing or administration). P(name, aliases, type, what it is, status, main risks) */
+function P(n, al, t, s, st, risk) {
+  return { n: n, al: al, c: PEDCLS, t: t, e: "Overview", s: s, g: "Overview only: no dosing here", k: 1, st: st,
+    d: { what: s, status: st, risk: risk }, tag: "none" };
+}
+var R_AAS = "Suppresses the body's own testosterone and sperm production; recovery is not guaranteed. Can raise blood pressure, worsen cholesterol (lower HDL, higher LDL), raise hematocrit and strain the heart. Mood changes, acne and hair loss are common.";
+var PEDS = [
+P("Testosterone", ["trt", "testosterone replacement", "androgen"], "Androgens and anabolic steroids", "Androgen hormone. Medically used for diagnosed low testosterone.", "Prescription; controlled substance in the US", "Suppresses natural production and fertility; raises hematocrit; can worsen sleep apnea, acne, and blood pressure. If testosterone is low, a clinician should confirm it with repeat morning blood tests first."),
+P("Anadrol (oxymetholone)", ["oxymetholone", "anadrol"], "Androgens and anabolic steroids", "Oral anabolic steroid.", "Prescription; controlled substance in the US", R_AAS + " Oral steroids of this type are particularly hard on the liver and cause fluid retention."),
+P("Anavar (oxandrolone)", ["oxandrolone", "anavar"], "Androgens and anabolic steroids", "Oral anabolic steroid derived from DHT.", "Prescription; controlled substance in the US", R_AAS + " Oral forms can injure the liver and lower HDL sharply."),
+P("Boldenone (Equipoise)", ["boldenone", "equipoise", "eq"], "Androgens and anabolic steroids", "Anabolic steroid made for veterinary use.", "Veterinary product; not approved for humans", R_AAS + " Raises red blood cell count."),
+P("Deca (nandrolone)", ["nandrolone", "deca", "deca-durabolin", "19-nor"], "Androgens and anabolic steroids", "19-nortestosterone derivative.", "Prescription; controlled substance in the US", R_AAS),
+P("Trenbolone", ["tren", "trenbolone"], "Androgens and anabolic steroids", "19-nortestosterone derivative made for veterinary use.", "Veterinary product; not approved for humans", R_AAS + " Reports of insomnia, night sweats, anxiety or aggression, and cough."),
+P("Winstrol (stanozolol)", ["stanozolol", "winstrol", "winny"], "Androgens and anabolic steroids", "DHT-derived anabolic steroid.", "Prescription (rarely); controlled substance in the US", R_AAS + " Joint dryness and tendon injury, and liver strain with oral forms."),
+P("Arimidex (anastrozole)", ["anastrozole", "arimidex", "ai", "aromatase inhibitor"], "Estrogen and hormone-axis medicines", "Aromatase inhibitor that lowers estrogen.", "Prescription; approved for breast cancer", "Estrogen is important in men: driving it too low can hurt joints, bone, cholesterol, mood and libido. Not a safety net for steroid use."),
+P("Aromasin (exemestane)", ["exemestane", "aromasin"], "Estrogen and hormone-axis medicines", "Steroidal aromatase inhibitor.", "Prescription; approved for breast cancer", "Same estrogen-suppression risks as other aromatase inhibitors."),
+P("Enclomiphene", ["enclomiphene", "serm", "clomiphene"], "Estrogen and hormone-axis medicines", "Selective estrogen receptor modulator studied for raising testosterone while preserving fertility.", "Not FDA approved; sold through compounding and unregulated sources", "Product quality and hormone-axis effects need clinician oversight and lab monitoring."),
+P("hCG", ["hcg", "human chorionic gonadotropin", "gonadotropin"], "Estrogen and hormone-axis medicines", "Gonadotropin hormone that stimulates the testes.", "Prescription", "Can raise estradiol, cause testicular and mood effects, and should be supervised by a clinician for fertility or hormone management."),
+P("Finasteride", ["finasteride", "propecia", "5-ari", "5-alpha reductase"], "Estrogen and hormone-axis medicines", "5-alpha-reductase inhibitor used for hair loss and prostate enlargement.", "Prescription", "Sexual side effects and mood changes have been reported, some persistent after stopping. Lowers PSA, which affects prostate screening."),
+P("Dutasteride", ["dutasteride", "avodart", "5-ari"], "Estrogen and hormone-axis medicines", "5-alpha-reductase inhibitor, stronger DHT suppression than finasteride.", "Prescription", "Same sexual and mood side-effect concerns as finasteride; lowers PSA."),
+P("HGH (somatropin)", ["hgh", "growth hormone", "somatropin", "gh"], "Growth-hormone axis", "Recombinant growth hormone.", "Prescription; approved for specific deficiencies", "Fluid retention, joint pain, carpal tunnel symptoms, and insulin resistance with misuse. Counterfeit products are common."),
+P("Tesamorelin", ["tesamorelin", "egrifta", "ghrh"], "Growth-hormone axis", "Growth-hormone-releasing hormone analog.", "Prescription; approved for a specific HIV-related condition", "Raises IGF-1; glucose and fluid effects. Not established for performance or anti-aging use."),
+P("CJC-1295", ["cjc-1295", "cjc", "ghrh"], "Growth-hormone axis", "Growth-hormone-releasing peptide sold for research.", "Not approved; sold as a research chemical", "Product identity, purity, and sterility are unverified; long-term human safety data are lacking."),
+P("Ipamorelin", ["ipamorelin", "ghrp", "secretagogue"], "Growth-hormone axis", "Growth-hormone secretagogue peptide.", "Not approved; sold as a research chemical", "Unverified product quality; effects on glucose and long-term safety are poorly studied."),
+P("MK-677 (ibutamoren)", ["mk-677", "ibutamoren", "mk677"], "Growth-hormone axis", "Oral growth-hormone secretagogue.", "Investigational; not approved", "Raises appetite, water retention, fasting glucose and insulin resistance; long-term safety unknown."),
+P("BPC-157", ["bpc-157", "bpc157", "body protection compound"], "Investigational peptides", "Peptide marketed for tissue repair.", "Not approved; sold as a research chemical", "Almost no human safety or efficacy data. Quality and sterility of products are unverified."),
+P("TB-500 (thymosin beta-4)", ["tb-500", "tb500", "thymosin beta-4"], "Investigational peptides", "Peptide fragment marketed for recovery.", "Not approved; sold as a research chemical", "Almost no human data; quality and contamination risks."),
+P("GHK-Cu", ["ghk-cu", "copper peptide", "ghk"], "Investigational peptides", "Copper peptide used in cosmetic skin and hair products.", "Cosmetic topicals are sold legally; injectables are unapproved", "Topicals can irritate skin; injected products lack human safety data."),
+P("MOTS-c", ["mots-c", "motsc", "mitochondrial peptide"], "Investigational peptides", "Mitochondrial-derived peptide studied in early research.", "Not approved; sold as a research chemical", "Early-stage science with minimal human data."),
+P("Semax", ["semax"], "Cognition and mood compounds", "Synthetic peptide used clinically in Russia.", "Not approved in the US", "Limited English-language trial data; product quality varies."),
+P("Selank", ["selank"], "Cognition and mood compounds", "Synthetic peptide used clinically in Russia.", "Not approved in the US", "Limited trial data; product quality varies."),
+P("Bromantane", ["bromantane", "ladasten"], "Cognition and mood compounds", "Stimulant-like compound developed in Russia.", "Not approved in the US", "Limited safety data; interacts with other stimulants; prohibited in tested sports."),
+P("9-Me-BC", ["9-me-bc", "9mebc", "methyl-beta-carboline"], "Cognition and mood compounds", "Experimental compound studied in cell and animal research.", "Not approved; research chemical", "Human safety data are essentially absent."),
+P("Dihexa", ["dihexa"], "Cognition and mood compounds", "Experimental peptide-like compound studied in animals.", "Not approved; research chemical", "No human safety data; theoretical concerns about effects on cell growth signaling."),
+P("Semaglutide", ["semaglutide", "ozempic", "wegovy", "glp-1"], "Weight and metabolic agents", "GLP-1 receptor agonist used for diabetes and weight management.", "Prescription; approved", "Nausea, GI effects, gallbladder problems and pancreatitis. Weight loss includes lean mass. Counterfeit and unregulated products circulate. Irrelevant to a lean bulk."),
+P("Tirzepatide", ["tirzepatide", "mounjaro", "zepbound", "glp-1", "gip"], "Weight and metabolic agents", "GIP and GLP-1 receptor agonist used for diabetes and weight management.", "Prescription; approved", "Similar to semaglutide: GI effects, gallbladder and pancreatitis risk, lean-mass loss."),
+P("Retatrutide", ["retatrutide"], "Weight and metabolic agents", "Investigational triple-receptor incretin agonist.", "Investigational; not approved", "Still in clinical trials; products sold online are unregulated."),
+P("Cagrilintide", ["cagrilintide", "amylin"], "Weight and metabolic agents", "Investigational amylin analog for appetite and weight.", "Investigational; not approved", "Still in clinical trials; GI side effects reported."),
+P("Acarbose", ["acarbose", "precose"], "Weight and metabolic agents", "Medicine that slows carbohydrate digestion to lower blood sugar.", "Prescription", "Gas, bloating and diarrhea; low blood sugar risk with other diabetes drugs."),
+P("Berberine", ["berberine"], "Weight and metabolic agents", "Plant-derived supplement studied for blood glucose and lipids.", "Dietary supplement", "GI upset; interacts with many drugs; not safe in pregnancy; can add to glucose-lowering medicines."),
+P("AICAR", ["aicar"], "Weight and metabolic agents", "Experimental metabolic compound marketed for endurance.", "Not approved; research chemical", "Minimal human data; prohibited in tested sports."),
+P("Cardarine (GW-501516)", ["cardarine", "gw-501516", "gw1516", "ppar"], "Weight and metabolic agents", "Experimental metabolic compound.", "Not approved; development stopped", "Development was halted after cancer findings in animal studies. Prohibited in tested sports."),
+P("5-Amino-1MQ", ["5-amino-1mq", "5amino1mq"], "Weight and metabolic agents", "Experimental compound studied in animal obesity models.", "Not approved; research chemical", "No human safety data."),
+P("Clenbuterol", ["clenbuterol", "clen", "beta agonist"], "Weight and metabolic agents", "Beta-agonist used as a bronchodilator in some countries and in veterinary medicine.", "Not approved for humans in the US", "Rapid heart rate, tremor, arrhythmias and low potassium. Prohibited in tested sports."),
+P("Glutathione", ["glutathione", "gsh"], "Other compounds", "Antioxidant made by the body, sold as a supplement.", "Dietary supplement; injectables are unapproved", "Oral products absorb poorly; injected products raise quality and infection concerns."),
+P("NAD+", ["nad", "nad+", "nmn", "nicotinamide riboside"], "Other compounds", "Cellular metabolism cofactor sold as a supplement and injectable.", "Supplement; injectables unapproved", "Limited human evidence for performance or aging claims."),
+P("TUDCA", ["tudca", "bile acid", "liver support"], "Other compounds", "Bile acid derivative sold as a supplement.", "Dietary supplement", "GI effects. It does not make liver-toxic drug use safe.")
+];
+ITEMS = ITEMS.concat(PEDS);
+
+var OVERVIEW = [
+ ["Read first: what this section is", "<p>A risk-oriented reference built from a long, enthusiast-written FAQ. It names compounds, explains what they are, and lists main risks. It <b>does not include doses, cycles, stacks, sourcing or injection instructions</b>, and none of these should be treated as part of your plan. The source mixes personal opinion, vendor sponsorships and claims that were never tested in human trials, so it is not a medical guideline.</p><p>Anything here that is a prescription drug should only be used under a licensed clinician. Many items are also on the prohibited list in tested sports.</p>"],
+ ["Hormone basics", "<ul><li><b>Testosterone, estradiol and DHT.</b> Aromatase converts testosterone to estrogens and 5-alpha-reductase converts it to DHT. These pathways affect muscle, mood, skin, hair and reproductive function.</li><li><b>SHBG and free testosterone.</b> SHBG binds testosterone. Total testosterone is bound plus unbound; free is the unbound portion. Neither number alone describes symptoms.</li><li><b>Estrogen matters in men.</b> Suppressing it without a clear clinical reason can cause harm.</li><li><b>Half-life.</b> The time for the amount in the body to fall by half. Repeated exposure accumulates before the last dose clears, and the ester or form changes how fast a drug is released.</li><li><b>Steroid families.</b> DHT derivatives (oxandrolone, drostanolone, metenolone), testosterone derivatives, and 19-nortestosterone derivatives (nandrolone, trenbolone).</li><li><b>Shutdown.</b> Outside hormones suppress the brain-to-testes signal. Recovery varies, and post-cycle therapy does not guarantee a return to baseline hormones or fertility.</li></ul>"],
+ ["Peptide basics", "<ul><li>Peptides are short chains of amino acids. Products sold as research peptides may not be approved medicines and often lack reliable human safety, efficacy, purity or stability data.</li><li>Identity, concentration, sterility, contamination and storage stability are real safety concerns.</li><li>Do not assume two peptides are safe to combine because a forum says so. Interaction data are usually absent.</li><li>Injectables add their own risks: infection, abscess, tissue injury, dosing errors and contamination.</li></ul>"],
+ ["Bloodwork and monitoring", "<p>The FAQ groups tests by health status and exposure. These are the markers it names; a clinician should choose and interpret them.</p><ul><li><b>Blood count:</b> CBC with RBC, hemoglobin, hematocrit, WBC, platelets.</li><li><b>Liver and kidney:</b> ALT, AST, alkaline phosphatase, bilirubin, albumin, BUN, creatinine / eGFR, cystatin C.</li><li><b>Lipids and metabolic:</b> total cholesterol, LDL-C, HDL-C, triglycerides, glucose, HbA1c, fasting insulin, uric acid.</li><li><b>Hormones:</b> total and free testosterone, sensitive estradiol, SHBG, LH, FSH, prolactin, DHEA-S, cortisol, TSH, free T4, free T3.</li><li><b>Other:</b> ferritin / iron studies, IGF-1, PSA where appropriate, hs-CRP, CK, lipoprotein(a), ApoA1 / ApoB, urinalysis.</li><li><b>Fertility:</b> semen analysis. Hormone levels alone do not establish fertility.</li></ul><p>A single abnormal value does not diagnose a condition, and a normal result does not make non-prescribed use safe.</p>"],
+ ["Risk checklist", "<ul><li>Anabolic steroids and some SARMs suppress natural hormone production; recovery is not guaranteed.</li><li>Think about fertility first: suppression can impair sperm production, sometimes for a long time.</li><li>Cardiovascular risks: higher blood pressure, worse lipids, higher hematocrit, heart remodeling, possible increase in cardiac events.</li><li>Liver risk, especially with oral steroids and other liver-toxic substances.</li><li>Mood and sleep changes, acne, hair loss, gynecomastia and sexual function.</li><li>Research chemicals are not a substitute for regulated care. Post-cycle therapy, organ-support supplements and routine labs do not guarantee protection.</li><li>Be honest with your clinician about everything you take.</li></ul><p><b>Get prompt medical care for:</b> chest pain, shortness of breath, fainting, severe headache or neurologic symptoms, jaundice, severe abdominal pain, or signs of infection at an injection site.</p>"]
+];
+function ovHtml() {
+  return '<div class="sp-ov">' + OVERVIEW.map(function (o, i) { return '<details' + (i === 0 ? ' open' : '') + '><summary>' + esc(o[0]) + '</summary><div>' + o[1] + '</div></details>'; }).join("") + '</div>';
+}
+
+
 ITEMS.forEach(function (it) {
   it._b = (it.n + " " + it.al.join(" ") + " " + it.c + " " + it.t + " " + it.s + " " + it.g + " " + Object.keys(it.d).map(function (k) { return it.d[k]; }).join(" ")).toLowerCase();
   it._h = (it.n + " " + it.al.join(" ") + " " + it.t).toLowerCase();
@@ -189,7 +253,7 @@ function hl(text, toks) {
 
 function shell(planHtml) {
   return '<h2>Supplements</h2>' +
-    '<div class="sp-bar"><input id="sp-q" type="search" placeholder="Search a supplement, nutrient or goal (creatine, vitamin d, sleep, soreness...)" autocomplete="off" oninput="SUPP.draw()"></div>' +
+    '<div class="sp-bar"><input id="sp-q" type="search" placeholder="Search a supplement, nutrient or goal (creatine, vitamin d, sleep, finasteride...)" autocomplete="off" oninput="SUPP.draw()"></div>' +
     '<div class="sp-chips" id="sp-chips"></div><div class="sp-count" id="sp-count"></div>' +
     planHtml + '<div id="sp-out"></div>' +
     '<p class="mute" style="margin-top:18px">General education, not medical advice. Recommended intakes and upper limits (UL) are the U.S. Food and Nutrition Board values published by the NIH Office of Dietary Supplements; creatine, caffeine and beta-alanine ranges follow ISSN position stands. Evidence ratings are my summary of how strong the human data are for the stated use. The "Your plan" notes use numbers from the plan as of ' + PLAN_DATE + '. Talk to a doctor or pharmacist before adding supplements if you take medications, have kidney, liver or heart conditions, or are pregnant. Prefer products with third-party testing (NSF Certified for Sport, Informed Sport, USP).</p>';
@@ -221,17 +285,18 @@ function draw(keep) {
   if (full) list.sort(function (a, b) { return (b[0]._h.indexOf(full) >= 0 ? 1 : 0) - (a[0]._h.indexOf(full) >= 0 ? 1 : 0); });
   var auto = full && list.length <= 3;
   chips();
-  $("sp-count").textContent = list.length + " of " + ITEMS.length + " supplements";
-  if (!list.length) { $("sp-out").innerHTML = '<div class="sp-empty">Nothing matches. Try a different word, or clear the filters.</div>'; return; }
+  $("sp-count").textContent = list.length + " of " + ITEMS.length + " entries";
+  var pre = (cls === PEDCLS && !full) ? ovHtml() : "";
+  if (!list.length) { $("sp-out").innerHTML = pre + '<div class="sp-empty">Nothing matches. Try a different word, or clear the filters.</div>'; return; }
   var render = function (p) {
     var it = p[0], i = p[1], isOpen = open[i] || auto, d = it.d;
-    var rows = [["Typical dose", d.dose], ["Timing", d.timing], ["Safety / limits", d.safety], ["Cautions", d.cautions], ["Food sources", d.food]].filter(function (r) { return r[1]; });
+    var rows = (it.k ? [["Status", d.status], ["Main risks", d.risk]] : [["Typical dose", d.dose], ["Timing", d.timing], ["Safety / limits", d.safety], ["Cautions", d.cautions], ["Food sources", d.food]]).filter(function (r) { return r[1]; });
     return '<div class="sp-card' + (isOpen ? " open" : "") + '"><div class="sp-head" onclick="SUPP.toggle(' + i + ')"><div><div class="sp-nm">' + hl(it.n, toks) + '</div><div class="sp-sum">' + hl(it.s, toks) + '</div><div class="sp-glance"><b>At a glance:</b> ' + hl(it.g, toks) + '</div></div>' +
-      '<div class="sp-badges"><span class="sp-badge e-' + it.e + '">' + it.e + ' evidence</span>' + (it.tag !== "none" ? '<span class="sp-badge t-' + it.tag + '">' + TAGTXT[it.tag] + '</span>' : "") + '</div></div>' +
+      '<div class="sp-badges"><span class="sp-badge e-' + it.e + '">' + (it.k ? "Overview only" : it.e + " evidence") + '</span>' + (it.tag !== "none" ? '<span class="sp-badge t-' + it.tag + '">' + TAGTXT[it.tag] + '</span>' : "") + '</div></div>' +
       '<div class="sp-body">' + rows.map(function (r) { return '<div class="sp-row"><div class="k">' + r[0] + '</div><div>' + hl(r[1], toks) + '</div></div>'; }).join("") +
-      '<div class="sp-row sp-plan-row"><div class="k">Your plan</div><div>' + hl(d.plan, toks) + '</div></div></div></div>';
+      '' + (it.k ? "" : '<div class="sp-row sp-plan-row"><div class="k">Your plan</div><div>' + hl(d.plan, toks) + '</div></div>') + '</div></div>';
   };
-  var h = "";
+  var h = pre;
   CLASSES.forEach(function (c) {
     var types = []; ITEMS.forEach(function (it) { if (it.c === c && types.indexOf(it.t) < 0) types.push(it.t); });
     var got = types.filter(function (t) { return list.some(function (p) { return p[0].c === c && p[0].t === t; }); });
