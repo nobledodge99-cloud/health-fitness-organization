@@ -21,19 +21,22 @@ const PRESETS = {
 };
 function freshWeek() {
   const w = {};
-  DAYS.forEach(d => w[d] = JSON.parse(JSON.stringify(d === 'Saturday' ? PRESETS.pizza : PRESETS.typical)));
+  DAYS.forEach(d => w[d] = JSON.parse(JSON.stringify(PRESETS.typical)));
   return w;
 }
 function freshState() {
   return {
     tab: 'overview', view: 'avg', showAllMeals: false, showAllShop: false,
     targets: { bw: 200, goal: 240, rate: 0.5, maint: 16, prot: 1.0, fat: 0.55, fiber: 14 },
-    week: freshWeek(), prep: {}, weeks: 2, mealIngs: {}, customMeals: [], pk: {}, bought: {},
+    week: freshWeek(), prep: {}, extra: {}, v2: true, weeks: 2, cook: ['Sunday', 'Thursday'], mainCook: 'Sunday', mealIngs: {}, customMeals: [], pk: {}, bought: {},
     ex: D.exercises.map(e => Object.assign({ load: '' }, e))
   };
 }
-let S;
-try { S = Object.assign(freshState(), JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { S = freshState(); }
+let S, savedRaw = {};
+try { savedRaw = JSON.parse(localStorage.getItem(KEY) || '{}'); S = Object.assign(freshState(), savedRaw); } catch (e) { S = freshState(); }
+if (!S.extra) S.extra = {};
+if (savedRaw.week && !savedRaw.v2 && JSON.stringify(S.week.Saturday) === JSON.stringify(PRESETS.pizza)) S.week.Saturday = JSON.parse(JSON.stringify(PRESETS.typical));
+S.v2 = true;
 if (location.hash === '#supplements') S.tab = 'supps';
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 function allMeals() { return D.meals.concat(S.customMeals); }
@@ -61,6 +64,7 @@ function mt(name) { const m = mealByName(name); if (!m) return Array(D.NUT.lengt
 function dayTotals(day) {
   const t = Array(D.NUT.length).fill(0);
   Object.values(S.week[day] || {}).forEach(([name, sv]) => { if (!name || !sv) return; const x = mt(name); x.forEach((v, i) => t[i] += v * sv); });
+  (S.extra[day] || []).forEach(x => { t[0] += x.kcal; t[1] += x.p; t[2] += x.c; t[3] += x.f; });
   return t;
 }
 function weekAvg() {
@@ -123,8 +127,12 @@ function overview() {
   h += '</div><div class="card"><h3>Meals today</h3>';
   const pl = S.week[today] || {};
   const rows = SLOTS.filter(([k]) => pl[k] && pl[k][0] && pl[k][1]).map(([k, l]) => { const x = mt(pl[k][0]).map(v => v * pl[k][1]); return `<tr><td>${l}</td><td>${esc(pl[k][0])}${pl[k][1] !== 1 ? ' x' + pl[k][1] : ''}</td><td class="n">${fmt(x[0], 0)}</td><td class="n">${fmt(x[1], 1)} g</td></tr>`; });
+  (S.extra[today] || []).forEach(x => rows.push(`<tr><td>Extra</td><td>${esc(x.name)}${x.est ? ' (est.)' : ''}</td><td class="n">${fmt(x.kcal, 0)}</td><td class="n">${fmt(x.p, 1)} g</td></tr>`));
   h += rows.length ? '<table><tr><th></th><th>Meal</th><th class="n">kcal</th><th class="n">Protein</th></tr>' + rows.join('') + '</table>' : '<p class="mute">Nothing planned for today. Set it on the Diet week tab.</p>';
   h += '</div></div>';
+  if (cookDays().indexOf(today) >= 0) h += '<h2>Cook day</h2>' + cookCard(today, true) + '<div class="row" style="margin:-6px 0 10px"><button class="btn sm alt" onclick="HFO.tab(\'recipes\')">Open recipes</button></div>';
+  else if (cookDays().length) { const nx = cookDays().map(d => [d, (DAYS.indexOf(d) - DAYS.indexOf(today) + 7) % 7]).sort((a, b) => a[1] - b[1])[0]; h += '<p class="mute">Next cook day: ' + nx[0] + ' (' + (nx[1] === 1 ? 'tomorrow' : 'in ' + nx[1] + ' days') + ').</p>'; }
+  h += riceCard(today);
   h += '<h2>Today vs. targets</h2><div class="card">' + kpis(dayTotals(today), C) + '</div>';
   h += '<h2>This week (daily average)</h2><div class="card">' + kpis(weekAvg(), C) + '</div>';
   return h;
@@ -133,20 +141,32 @@ function overview() {
 function mealOptions(sel) {
   return '<option value="">(none)</option>' + allMeals().map((m, i) => `<option value="${i}" ${m.name === sel ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
 }
+
+function extraBox(d) {
+  const list = S.extra[d] || [];
+  let h = '<div class="extrabox"><div class="mute" style="margin:6px 0 4px"><b>Eating out / custom</b></div>';
+  list.forEach((x, i) => { h += '<div class="row" style="justify-content:space-between;margin:2px 0"><span>' + esc(x.name) + (x.est ? ' <span class="mute">(est.)</span>' : '') + '<div class="mute">' + fmt(x.kcal, 0) + ' kcal · P ' + fmt(x.p, 1) + ' · C ' + fmt(x.c, 1) + ' · F ' + fmt(x.f, 1) + '</div></span><button class="btn sm alt" onclick="HFO.delExtra(\'' + d + '\',' + i + ')">✕</button></div>'; });
+  h += '<div class="row" style="margin-top:4px"><input id="xn_' + d + '" type="text" placeholder="What did you eat?" style="width:100%"></div>';
+  h += '<div class="row" style="margin-top:4px">' + [['xk', 'kcal'], ['xp', 'P g'], ['xc', 'C g'], ['xf', 'F g']].map(([k, l]) => '<input id="' + k + '_' + d + '" type="number" min="0" placeholder="' + l + '" style="width:64px">').join('') + '<button class="btn sm" onclick="HFO.addExtra(\'' + d + '\')">Add</button></div>';
+  h += '<div class="mute" style="margin-top:3px">Enter just calories and I will estimate the macros (about 20% protein, 45% carbs, 35% fat). Fill in P, C and F yourself if you know them.</div></div>';
+  return h;
+}
 function diet() {
   const C = calcTargets();
-  let h = '<h2>Diet week</h2><p class="mute">Pick a meal and servings for each slot. Use the Typical / Pizza buttons to fill a day in one tap. The totals below update automatically.</p>';
+  let h = '<h2>Diet week</h2><p class="mute">Pick a meal and servings for each slot. Every day starts on plan. Tap Pizza day to switch a day to the pizza meal, or add anything else you ate under Eating out / custom. The totals below update automatically.</p>';
   h += '<div class="row" style="margin-bottom:10px"><button class="btn" onclick="HFO.fillAll(\'typical\')">Set every day to Typical</button><button class="btn alt" onclick="HFO.resetWeek()">Reset week to default</button></div>';
   h += '<div class="days">';
   DAYS.forEach(d => {
     const t = dayTotals(d);
-    h += `<div class="day ${S.view === d ? 'sel' : ''}"><h4>${d}</h4><div class="mute">${fmt(t[0], 0)} kcal · ${fmt(t[1], 1)} g protein</div>`;
-    h += `<div class="row" style="margin:6px 0"><button class="btn sm" onclick="HFO.fill('${d}','typical')">Typical</button><button class="btn sm alt" onclick="HFO.fill('${d}','pizza')">Pizza day</button><button class="btn sm alt" onclick="HFO.fill('${d}','')">Clear</button><button class="btn sm alt" onclick="HFO.view('${d}')">Details</button></div>`;
+    h += `<div class="day ${S.view === d ? 'sel' : ''}"><h4>${d}${cookDays().indexOf(d) >= 0 ? ' <span class="badge b-ok">Cook day</span>' : ''}</h4><div class="mute">${fmt(t[0], 0)} kcal · ${fmt(t[1], 1)} g protein</div>`;
+    const pz = ((S.week[d] || {}).dinner || [])[0] === M.pizza;
+    h += `<div class="row" style="margin:6px 0"><button class="btn sm${pz ? ' alt' : ''}" onclick="HFO.fill('${d}','typical')">On plan</button><button class="btn sm${pz ? '' : ' alt'}" onclick="HFO.fill('${d}','pizza')">Pizza day</button><button class="btn sm alt" onclick="HFO.fill('${d}','')">Clear</button><button class="btn sm alt" onclick="HFO.view('${d}')">Details</button></div>`;
     SLOTS.forEach(([k, l]) => {
       const cur = (S.week[d] || {})[k] || ['', 0];
       h += `<div class="slot"><label>${l}</label><select onchange="HFO.setMeal('${d}','${k}',this.value)">${mealOptions(cur[0])}</select>`;
       h += `<div class="step"><button onclick="HFO.srv('${d}','${k}',-1)">−</button><span>${cur[0] ? cur[1] : ''}</span><button onclick="HFO.srv('${d}','${k}',1)">+</button></div></div>`;
     });
+    h += extraBox(d);
     h += '</div>';
   });
   h += '</div>';
@@ -188,6 +208,72 @@ function weekSv(name) {
 function plannedSv(name) { return weekSv(name) * (S.weeks || 1); }
 function prepSv(name) { const o = (S.prep || {})[name]; return o == null ? plannedSv(name) : o; }
 function buySv(name) { return Math.max(plannedSv(name), (S.prep || {})[name] || 0); }
+
+
+/* ---------- cook days ---------- */
+function cookDays() { return DAYS.filter(d => (S.cook || []).indexOf(d) >= 0); }
+function mainCook() { const cd = cookDays(); return cd.indexOf(S.mainCook) >= 0 ? S.mainCook : cd[0]; }
+function riceOf(day) {
+  let g = 0;
+  Object.values(S.week[day] || {}).forEach(([n, sv]) => { const m = mealByName(n); if (!m || !sv) return; ingsOf(m).forEach(([f, x]) => { if (f === 'White rice (cooked)') g += x * sv; }); });
+  return { cooked: g, dry: g / FOOD['White rice (cooked)'].yield };
+}
+function proteinRaw(meals) {
+  const raw = {};
+  Object.keys(meals).forEach(n => { const m = mealByName(n); if (!m) return; ingsOf(m).forEach(([f, g]) => {
+    if (D.lbfoods.indexOf(f) >= 0 && FOOD[f].cat === 'Protein') raw[f] = (raw[f] || 0) + g * meals[n] / FOOD[f].yield / 453.592;
+  }); });
+  return raw;
+}
+function cookSummary(c) {
+  const cd = cookDays(), i = DAYS.indexOf(c), idx = cd.map(d => DAYS.indexOf(d));
+  const nxt = idx.filter(x => x > i)[0];
+  const end = nxt != null ? nxt : (idx[0] + 7);
+  const days = []; for (let k = i; k < end; k++) days.push(DAYS[k % 7]);
+  const meals = {};
+  days.forEach(d => ['lunch', 'dinner', 'snack'].forEach(k => {
+    const x = (S.week[d] || {})[k]; if (x && x[0] && x[1] && x[0].indexOf('Pizza') < 0 && x[0] !== M.burrito) meals[x[0]] = (meals[x[0]] || 0) + x[1];
+  }));
+  const isMain = c === mainCook(), bn = isMain ? weekSv(M.burrito) * (S.weeks || 1) : 0;
+  const bm = {}; if (bn) bm[M.burrito] = bn;
+  return { days, meals, isMain, bn, meat: proteinRaw(meals), bmeat: proteinRaw(bm), eggs: bn ? ingsOf(mealByName(M.burrito)).filter(x => x[0] === 'Egg, whole').reduce((a, x) => a + x[1] * bn / 50, 0) : 0 };
+}
+function lbList(o) { return Object.keys(o).map(f => esc(f.replace(' (cooked)', '').replace(' 85/15', '')) + ' ' + o[f].toFixed(1) + ' lb'); }
+function sumRaw(a, b) { const r = Object.assign({}, a); Object.keys(b).forEach(f => r[f] = (r[f] || 0) + b[f]); return r; }
+function cookCard(c, compact) {
+  const r = cookSummary(c), d0 = r.days[0].slice(0, 3), d1 = r.days[r.days.length - 1].slice(0, 3), W = S.weeks || 1;
+  let h = '<div class="card"><h3 style="margin:0 0 4px">' + c + (r.isMain ? ' (main cook day)' : '') + ': meat for ' + (r.days.length > 1 ? d0 + ' to ' + d1 : d0) + '</h3><ul style="margin:4px 0">';
+  if (r.bn) h += '<li><b>All ' + r.bn + ' breakfast burritos</b> for the ' + W + '-week block. Wrap them all, keep the next 3 to 4 days in the fridge and freeze the rest. <span class="mute">(Block-start ' + c + ' only.)</span></li>';
+  const names = Object.keys(r.meals);
+  if (names.length) h += names.map(n => '<li>Meat for ' + esc(n) + ' <b>x ' + r.meals[n] + '</b></li>').join('');
+  else h += '<li>No lunches or dinners planned for these days.</li>';
+  h += '</ul>';
+  const wk = lbList(r.meat);
+  if (r.bn) {
+    h += '<p class="mute" style="margin:4px 0">Raw to cook at the block start: ' + lbList(sumRaw(r.meat, r.bmeat)).join(' · ') + (r.eggs ? ' · Eggs ' + Math.ceil(r.eggs) : '') + '</p>';
+    if (W > 1) h += '<p class="mute" style="margin:4px 0">Every other ' + c + ' (no burritos): ' + (wk.join(' · ') || 'nothing') + '</p>';
+  } else h += '<p class="mute" style="margin:4px 0">Raw to cook: ' + (wk.join(' · ') || 'nothing') + '</p>';
+  h += '<p class="mute" style="margin:4px 0 0">No rice today. Cook it fresh each morning.</p>';
+  if (!compact) h += '<p class="mute" style="margin:4px 0 0">Thaw any frozen meat in the fridge the day before.</p>';
+  return h + '</div>';
+}
+function riceCard(day, compact) {
+  const r = riceOf(day); if (!(r.cooked > 0)) return '';
+  return '<div class="card"><b>Rice this morning:</b> ' + Math.round(r.dry) + ' g dry rice (about ' + (r.dry / 185).toFixed(1) + ' cups dry) makes about ' + Math.round(r.cooked).toLocaleString() + ' g cooked for today\'s meals.</div>';
+}
+function riceWeek() {
+  let h = '<div class="card"><h3 style="margin:0 0 6px">Rice each morning</h3><div class="scroll"><table><tr><th>Day</th><th class="n">Dry (g)</th><th class="n">Cups dry</th><th class="n">Cooked (g)</th></tr>';
+  DAYS.forEach(d => { const r = riceOf(d); h += '<tr><td>' + d + '</td><td class="n">' + (r.cooked ? Math.round(r.dry) : '') + '</td><td class="n">' + (r.cooked ? (r.dry / 185).toFixed(1) : '') + '</td><td class="n">' + (r.cooked ? Math.round(r.cooked).toLocaleString() : '') + '</td></tr>'; });
+  return h + '</table></div><p class="mute" style="margin:6px 0 0">Weigh the dry rice, cook it in the morning and use it through the day. Cups assume about 185 g of dry white rice per cup.</p></div>';
+}
+function cookSetup() {
+  const cd = cookDays();
+  let h = '<div class="card"><h3 style="margin:0 0 6px">Cook days</h3><div class="row">' + DAYS.map(d => '<label style="display:flex;gap:4px;align-items:center"><input type="checkbox" ' + (cd.indexOf(d) >= 0 ? 'checked ' : '') + 'onchange="HFO.toggleCook(\'' + d + '\')" style="width:auto">' + d.slice(0, 3) + '</label>').join('') + '</div>';
+  if (cd.length) h += '<div class="row" style="margin-top:8px"><label>Main cook day (all burritos for the block) <select onchange="HFO.setMain(this.value)">' + cd.map(d => '<option' + (d === mainCook() ? ' selected' : '') + '>' + d + '</option>').join('') + '</select></label></div>';
+  h += '<p class="mute" style="margin:6px 0 0">Each cook day cooks the meat for the days until the next cook day. The main cook day also makes every breakfast burrito for the block, once, at the start. Rice is never batch-cooked: you make it each morning.</p></div>';
+  if (!cd.length) return h + '<p class="mute">Pick at least one cook day to see what to cook.</p>' + riceWeek();
+  return h + cd.map(d => cookCard(d)).join('') + riceWeek();
+}
 
 /* ---------- recipes & prep ---------- */
 function buyCell(f, g) {
@@ -232,11 +318,11 @@ function planNote(name) {
   return '<p class="mute" style="margin:0 0 8px">' + t + '</p>';
 }
 function recipes() {
-  let h = '<h2>Recipes &amp; prep</h2>' + blockBar() + '<p class="mute">Quantities come from the gram amounts on your Meals tab, so if you change a meal there, this page updates too.</p>';
+  let h = '<h2>Recipes &amp; prep</h2>' + blockBar() + cookSetup() + '<p class="mute">Quantities come from the gram amounts on your Meals tab, so if you change a meal there, this page updates too.</p>';
 
   /* breakfast burrito batch */
   const bm = mealByName(M.burrito), bi = ingsOf(bm), bt = mealTotals(bm), n = prepSv(bm.name);
-  h += '<div class="card"><h3>' + esc(bm.name) + ': Saturday / Sunday batch</h3>';
+  h += '<div class="card"><h3>' + esc(bm.name) + ': batch cook</h3>';
   h += '<div class="row" style="margin-bottom:8px"><label>Burritos to make <input type="number" min="0" max="60" step="1" value="' + n + '" onchange="HFO.setSv(' + allMeals().indexOf(bm) + ',this.value)"></label><span class="mute">Each: ' + fmt(bt[0], 0) + ' kcal · ' + fmt(bt[1], 1) + ' g protein · ' + fmt(bt[4], 1) + ' g fiber</span></div>' + planNote(bm.name);
   h += recTable(bi.map(([f, g]) => ({ f, total: g * n, cells: [Math.round(g), Math.round(g * n).toLocaleString()] })), ['Per burrito (g)', 'Batch total (g)']);
   h += '<p class="mute">Beef and rice weights are cooked; "Buy (raw)" converts back to the weight you buy. Tortillas, tots, veggies and salsa are on the Shopping tab.</p>';
@@ -417,6 +503,19 @@ window.HFO = {
   view(v) { S.view = v; S.tab = 'diet'; render(); },
   toggle(k) { S[k] = !S[k]; render(); },
   setSv(mi, v) { const m = allMeals()[mi]; S.prep = S.prep || {}; S.prep[m.name] = Math.max(0, Math.min(60, Math.round(num(v)))); render(); },
+  toggleCook(d) { S.cook = S.cook || []; const i = S.cook.indexOf(d); if (i >= 0) S.cook.splice(i, 1); else S.cook.push(d); render(); },
+  addExtra(d) {
+    const g = id => num((document.getElementById(id + '_' + d) || {}).value);
+    let kcal = g('xk'), p = g('xp'), c = g('xc'), f = g('xf'), est = false;
+    const name = ((document.getElementById('xn_' + d) || {}).value || '').trim() || 'Eating out';
+    if (!kcal && !(p || c || f)) return;
+    if (!kcal) kcal = 4 * p + 4 * c + 9 * f;
+    else if (!(p || c || f)) { p = kcal * 0.20 / 4; c = kcal * 0.45 / 4; f = kcal * 0.35 / 9; est = true; }
+    (S.extra[d] = S.extra[d] || []).push({ name, kcal, p, c, f, est });
+    render();
+  },
+  delExtra(d, i) { (S.extra[d] || []).splice(i, 1); render(); },
+  setMain(d) { S.mainCook = d; render(); },
   setWeeks(v) { S.weeks = Math.max(1, Math.min(4, Math.round(num(v)) || 1)); render(); },
   resetSv(name) { if (S.prep) delete S.prep[name]; render(); },
 bought(k) { S.bought = S.bought || {}; if (S.bought[k]) delete S.bought[k]; else S.bought[k] = 1; render(); },
