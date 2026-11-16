@@ -689,6 +689,56 @@ window.DATA = {
    "note": "Kirkland Three Berry Blend (raspberry, blueberry, blackberry), 4 lb bag. Label per 126 g: 70 kcal, 0 g fat, 16 g carbs, 5 g fiber (protein about 1 to 2 g). Micronutrients are estimates."
   },
   {
+   "name": "Greek yogurt, nonfat (Kirkland organic)",
+   "cat": "Dairy",
+   "yield": 1,
+   "n": [
+    58.8,
+    10.6,
+    4.1,
+    0,
+    0,
+    35.3,
+    111.8,
+    111.8,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "note": "From your tub label: 2/3 cup (170 g) = 100 kcal, 18 g protein, 7 g carbs, 0 g fat. Vitamins and minerals the label does not list are left at 0"
+  },
+  {
+   "name": "Granola, ancient grains (Kirkland)",
+   "cat": "Grain",
+   "yield": 1,
+   "n": [
+    454.5,
+    9.1,
+    70.9,
+    16.4,
+    10.9,
+    209.1,
+    278.2,
+    47.3,
+    3.6,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "note": "From your bag label: 3/4 cup (55 g) = 250 kcal, 5 g protein, 39 g carbs, 9 g fat, 6 g fiber. This is a regular granola, not a high-protein one. Unlisted vitamins and minerals are left at 0"
+  },
+  {
    "name": "Strawberries (frozen, unsweetened)",
    "cat": "Fruit",
    "yield": 1,
@@ -846,43 +896,57 @@ window.DATA = {
    "ings": [
     [
      "Flour tortilla (burrito size)",
-     90
-    ],
-    [
-     "Egg, whole",
      50
     ],
     [
-     "Egg whites (liquid)",
-     200
+     "Egg, whole",
+     100
     ],
     [
      "Ground beef 85/15 (cooked)",
-     70
+     50
     ],
     [
      "Tater tots (frozen)",
-     80
+     40
     ],
     [
      "Cheese, shredded cheddar / Mexican",
-     20
-    ],
-    [
-     "Bell pepper (red)",
-     30
+     15
     ],
     [
      "Onion",
-     20
+     10
     ],
     [
      "Spinach (raw)",
-     20
+     15
     ],
     [
      "Green salsa (salsa verde)",
-     30
+     20
+    ]
+   ]
+  },
+  {
+   "name": "Protein Yogurt Bowl",
+   "cat": "Breakfast",
+   "ings": [
+    [
+     "Greek yogurt, nonfat (Kirkland organic)",
+     340
+    ],
+    [
+     "Whey protein (Nutricost vanilla)",
+     36
+    ],
+    [
+     "Blueberries (frozen)",
+     100
+    ],
+    [
+     "Granola, ancient grains (Kirkland)",
+     55
     ]
    ]
   },
@@ -909,10 +973,6 @@ window.DATA = {
     [
      "Green salsa (salsa verde)",
      60
-    ],
-    [
-     "Bell pepper (red)",
-     40
     ],
     [
      "Onion",
@@ -1085,6 +1145,20 @@ window.DATA = {
     [
      "Chocolate milk (Darigold reduced fat)",
      250
+    ]
+   ]
+  },
+  {
+   "name": "2 Fried Eggs (with dinner)",
+   "cat": "Dinner",
+   "ings": [
+    [
+     "Egg, whole",
+     100
+    ],
+    [
+     "Olive oil",
+     5
     ]
    ]
   },
@@ -1290,15 +1364,27 @@ window.DATA = {
   },
   {
    "food": "Blueberries (frozen)",
-   "unit": "bag (5 lb)",
-   "size": 2268,
-   "note": "Costco Kirkland frozen blueberries"
+   "unit": "bag (3 lb)",
+   "size": 1361,
+   "note": "Costco Kirkland organic frozen blueberries, 3 lb"
   },
   {
    "food": "Mixed berries (frozen)",
    "unit": "bag (4 lb)",
    "size": 1814,
    "note": "Costco Kirkland Three Berry Blend"
+  },
+  {
+   "food": "Greek yogurt, nonfat (Kirkland organic)",
+   "unit": "tub (8 x 170 g)",
+   "size": 1360,
+   "note": "Costco Kirkland organic Greek yogurt tub, 8 servings"
+  },
+  {
+   "food": "Granola, ancient grains (Kirkland)",
+   "unit": "bag (18 x 55 g)",
+   "size": 990,
+   "note": "Costco Kirkland ancient grains granola, 18 servings"
   },
   {
    "food": "Strawberries (frozen, unsweetened)",
