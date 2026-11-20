@@ -887,6 +887,56 @@ window.DATA = {
     0
    ],
    "note": "Food court $1.99 slice, about 243 g (8.6 oz): 650 kcal, 34 g protein. Published values vary a little by source and most micros are unpublished, so totals undercount. Not a grocery item"
+  },
+  {
+   "name": "Rice crispy treat (homemade)",
+   "cat": "Carb",
+   "yield": 1,
+   "n": [
+    400,
+    3.7,
+    83.7,
+    7.6,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "note": "From your friend's approximate macros for the full 1,560 kcal batch. Piece weight is assumed at about 400 kcal per 100 g so the app can work in grams. Micros are unknown and left at 0"
+  },
+  {
+   "name": "Protein banana bread (homemade)",
+   "cat": "Carb",
+   "yield": 1,
+   "n": [
+    342.2,
+    11.4,
+    43.1,
+    14.4,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "note": "From your macros: 1 slice (1/10 of the loaf) = 308 kcal, 10.3 g protein, 38.8 g carbs, 13 g fat. Slice weight is assumed at 90 g so the app can work in grams. Micros are unknown and left at 0"
   }
  ],
  "meals": [
@@ -1181,6 +1231,36 @@ window.DATA = {
     [
      "Oats (dry)",
      40
+    ]
+   ]
+  },
+  {
+   "name": "Homemade Rice Crispy Treat (1 square, 9-cut)",
+   "cat": "Shake / Snack",
+   "ings": [
+    [
+     "Rice crispy treat (homemade)",
+     43
+    ]
+   ]
+  },
+  {
+   "name": "Homemade Rice Crispy Treat (1 square, 12-cut)",
+   "cat": "Shake / Snack",
+   "ings": [
+    [
+     "Rice crispy treat (homemade)",
+     32.5
+    ]
+   ]
+  },
+  {
+   "name": "Protein Banana Bread (1 slice)",
+   "cat": "Shake / Snack",
+   "ings": [
+    [
+     "Protein banana bread (homemade)",
+     90
     ]
    ]
   }
